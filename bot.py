@@ -17,6 +17,7 @@ class Bot(Client):
 		config.read("config.ini")
 		self.email = config['LOGIN']['email']
 		self.password = config['LOGIN']['password']
+		self.ownerID = config['OWNER']['id']
 
 	def set_commands(self):
 		self.commands = {
@@ -30,9 +31,9 @@ class Bot(Client):
 
 	@asyncio.coroutine
 	def accept_invite_command(self, message):
-		if message.content.startswith("!acceptinvite "):
-			print(message.content)
-			yield from self.accept_invite(message.content[14:])
+		if self.ownerID == message.author.id:
+			if message.content.startswith("!acceptinvite "):
+				yield from self.accept_invite(message.content[14:])
 
 	@asyncio.coroutine
 	def cuck_command(self, message):
@@ -116,15 +117,16 @@ class Bot(Client):
 	@asyncio.coroutine
 	def info_command(self, message):
 		text = "Bot owned by ZonMachi\nDeveloped using the Discord.py library https://github.com/Rapptz/discord.py/"
+		text = text + '\nCurrently connected to {} servers'.format(str(len(self.servers))) 
 		yield from self.send_message(message.channel, text)
 
 	@asyncio.coroutine
-	def help_command(message):
+	def help_command(self, message):
 		if message.content == "!help":
 			help_message_base = "Commands: "
 			help_message = ""
 
-			for command in command_dict:
+			for command in self.commands:
 				help_message = help_message + ', ' + command
 
 			help_message = help_message[2:]
@@ -135,6 +137,8 @@ class Bot(Client):
 			help_message = 'Usage: !card <query>\nLooks up a Hearthstone card by name and returns the best matching card. Can also be used by typing a query within square brackets. E.g. [Ragnaros]'
 		elif message.content =="!help cuck":
 			help_message = 'Usage: !cuck <name>\nRandomly decides if a person is a cuck. If they are not, then the user of the command is a cuck.'
+		elif message.content == "!help info":
+			help_message = 'Usage: !info\nDisplays information about the bot.'
 
 		yield from self.send_message(message.channel, help_message)
 
