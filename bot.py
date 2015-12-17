@@ -127,12 +127,15 @@ class Bot(Client):
 			help_message = ""
 
 			for command in self.commands:
-				help_message = help_message + ', ' + command
+				if command.startswith('!'):
+					help_message = help_message + ', ' + command
 
 			help_message = help_message[2:]
 
 			help_message = help_message_base + help_message + "\nFor more information about a command type !help <command>"
 
+		elif message.content == "!help acceptinvite":
+			help_message = "Usage: !acceptinvite <URL>\nMakes the bot join the specified Discord server. Only owner can use this command."
 		elif message.content =="!help card":
 			help_message = 'Usage: !card <query>\nLooks up a Hearthstone card by name and returns the best matching card. Can also be used by typing a query within square brackets. E.g. [Ragnaros]'
 		elif message.content =="!help cuck":
