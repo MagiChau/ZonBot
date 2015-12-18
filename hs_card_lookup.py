@@ -1,6 +1,6 @@
 import card
-
-card_list = card.return_collectible_cards("cards.json")
+import sys
+card_list = card.return_collectible_cards(sys.path[0] + "/cards.json")
 
 def find_matches(query, min_match):
 	result_list = []

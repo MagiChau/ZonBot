@@ -2,8 +2,10 @@
 import asyncio
 import configparser
 import random
+import sys
 import discord
 from discord import *
+# from twitch_stream_notifier import TwitchStreamNotifier
 import hs_card_lookup
 
 class Bot(Client):
@@ -11,10 +13,11 @@ class Bot(Client):
 		super(Bot, self).__init__()
 		self.set_config_vars()
 		self.set_commands()
+		# self.twitch_notifier = TwitchStreamNotifier(self)
 
 	def set_config_vars(self):
 		config = configparser.ConfigParser()
-		config.read("config.ini")
+		config.read(sys.path[0] + "/config.ini")
 		self.email = config['LOGIN']['email']
 		self.password = config['LOGIN']['password']
 		self.ownerID = config['OWNER']['id']
@@ -24,6 +27,7 @@ class Bot(Client):
 			"!acceptinvite": self.accept_invite_command,
 			"!card": self.hearthstone_card_lookup_command,
 			"!cuck": self.cuck_command,
+			"!eval": self.eval_command,
 			"!info": self.info_command,
 			"!help": self.help_command,
 			"(╯°□°）╯︵ ┻━┻": self.unflip_command,
@@ -44,6 +48,14 @@ class Bot(Client):
 				yield from self.send_message(message.channel, "{} is a cuck".format(name))
 			else:
 				yield from self.send_message(message.channel, "{} is a cuck".format(message.author.name))
+
+	@asyncio.coroutine
+	def eval_command(self, message):
+		if self.ownerID == message.author.id:
+			if message.content.startswith("!eval "):
+				output = '```python\n' + str(eval(message.content[6:])) + '```'
+				yield from self.send_message(message.channel, output)
+
 	
 	@asyncio.coroutine
 	def hearthstone_card_lookup_command(self, message):
@@ -180,22 +192,25 @@ class Bot(Client):
 				command = message.content.split(' ')[0]
 				if command in self.commands:
 					yield from self.commands[command](message)
-			#search for delimited text
-			hearthstone_queries = yield from self.list_delimited_text(message, '[', ']')
-			output = ""
-			for query in hearthstone_queries:
-				results = hs_card_lookup.find_matches(query, 0.5)
-				if len(results) > 0:
-					results.sort(key=lambda x: x[1], reverse = True)
-					output  = output + (yield from self.format_hearthstone_card(results[0][0])) +'\n\n'
-			if output != "":
-				yield from self.send_message(message.channel, output[:-2])
+				else:
+					#search for delimited text
+					hearthstone_queries = yield from self.list_delimited_text(message, '[', ']')
+					output = ""
+					for query in hearthstone_queries:
+						results = hs_card_lookup.find_matches(query, 0.5)
+						if len(results) > 0:
+							results.sort(key=lambda x: x[1], reverse = True)
+							output  = output + (yield from self.format_hearthstone_card(results[0][0])) +'\n\n'
+					if output != "":
+						yield from self.send_message(message.channel, output[:-2])
 
-
-
+	# @asyncio.coroutine
+	# def notifier_loop():
+	# 	yield from self.twitch_stream_notifier.run()
 
 	def run(self):
 		yield from self.start(self.email, self.password)
+		# yield from self.notifier_loop();
 
 def main():
 	bot = Bot()
