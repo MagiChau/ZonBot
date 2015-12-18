@@ -51,7 +51,8 @@ class Bot(Client):
 
 	@asyncio.coroutine
 	def eval_command(self, message):
-		if self.ownerID == message.author.id:
+		white_listed_channels = ["119882119898988546", "96378857971531776"]
+		if self.ownerID == message.author.id and message.channel.id in white_listed_channels:
 			if message.content.startswith("!eval "):
 				output = '```python\n' + str(eval(message.content[6:])) + '```'
 				yield from self.send_message(message.channel, output)
