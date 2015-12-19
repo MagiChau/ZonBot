@@ -5,7 +5,7 @@ import random
 import sys
 import discord
 from discord import *
-# from twitch_stream_notifier import TwitchStreamNotifier
+from twitch_stream_notifier import TwitchStreamNotifier
 import hs_card_lookup
 
 class Bot(Client):
@@ -13,7 +13,7 @@ class Bot(Client):
 		super(Bot, self).__init__()
 		self.set_config_vars()
 		self.set_commands()
-		# self.twitch_notifier = TwitchStreamNotifier(self)
+		self.twitch_notifier = TwitchStreamNotifier(self)
 
 	def set_config_vars(self):
 		config = configparser.ConfigParser()
@@ -182,6 +182,7 @@ class Bot(Client):
 	@asyncio.coroutine
 	def on_ready(self):
 		print("Bot is connected")
+		yield from self.twitch_notifier.run()
 
 	@asyncio.coroutine
 	def on_message(self, message):
@@ -205,13 +206,8 @@ class Bot(Client):
 					if output != "":
 						yield from self.send_message(message.channel, output[:-2])
 
-	# @asyncio.coroutine
-	# def notifier_loop():
-	# 	yield from self.twitch_stream_notifier.run()
-
 	def run(self):
 		yield from self.start(self.email, self.password)
-		# yield from self.notifier_loop();
 
 def main():
 	bot = Bot()
