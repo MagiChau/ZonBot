@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-class Colour(object):
+class Colour:
     """Represents a Discord role colour. This class is similar
     to an (red, green, blue) tuple.
 
@@ -39,6 +39,8 @@ class Colour(object):
     +-----------+----------------------------------------+
     | x != y    | Checks if two colours are not equal.   |
     +-----------+----------------------------------------+
+    | hash(x)   | Return the colour's hash.              |
+    +-----------+----------------------------------------+
     | str(x)    | Returns the hex format for the colour. |
     +-----------+----------------------------------------+
 
@@ -47,6 +49,8 @@ class Colour(object):
     value : int
         The raw integer colour value.
     """
+
+    __slots__ = [ 'value' ]
 
     def __init__(self, value):
         self.value = value
@@ -62,6 +66,9 @@ class Colour(object):
 
     def __str__(self):
         return '#' + format(self.value, 'x')
+
+    def __hash__(self):
+        return hash(self.value)
 
     @property
     def r(self):

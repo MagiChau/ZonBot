@@ -43,7 +43,8 @@ class ConnectionState:
         self.email = None
         self.servers = []
         self.private_channels = []
-        self.messages = deque(maxlen=max_messages)
+        self.max_messages = max_messages
+        self.messages = deque(maxlen=self.max_messages)
         self.dispatch = dispatch
 
     def _get_message(self, msg_id):
@@ -54,6 +55,7 @@ class ConnectionState:
 
     def _add_server(self, guild):
         server = Server(**guild)
+        server.me = utils.get(server.members, id=self.user.id)
         self.servers.append(server)
         return server
 
@@ -80,7 +82,6 @@ class ConnectionState:
         self.messages.append(message)
 
     def parse_message_delete(self, data):
-        channel = self.get_channel(data.get('channel_id'))
         message_id = data.get('id')
         found = self._get_message(message_id)
         if found is not None:
@@ -119,12 +120,11 @@ class ConnectionState:
                     member.status = Status(member.status)
                 except:
                     pass
+
                 member.game_id = data.get('game_id')
                 member.name = user.get('username', member.name)
                 member.avatar = user.get('avatar', member.avatar)
 
-                # call the event now
-                self.dispatch('status', member, old_member.game_id, old_member.status)
                 self.dispatch('member_update', old_member, member)
 
     def parse_user_update(self, data):
@@ -147,8 +147,10 @@ class ConnectionState:
         if server is not None:
             channel_id = data.get('id')
             channel = utils.find(lambda c: c.id == channel_id, server.channels)
-            channel.update(server=server, **data)
-            self.dispatch('channel_update', channel)
+            if channel is not None:
+                old_channel = copy.copy(channel)
+                channel.update(server=server, **data)
+                self.dispatch('channel_update', old_channel, channel)
 
     def parse_channel_create(self, data):
         is_private = data.get('is_private', False)
@@ -169,7 +171,7 @@ class ConnectionState:
     def parse_guild_member_add(self, data):
         server = self._get_server(data.get('guild_id'))
         member = Member(server=server, deaf=False, mute=False, **data)
-        member.roles.append(server.get_default_role())
+        member.roles.append(server.default_role)
         server.members.append(member)
         self.dispatch('member_join', member)
 
@@ -195,7 +197,7 @@ class ConnectionState:
             member.name = user['username']
             member.discriminator = user['discriminator']
             member.avatar = user['avatar']
-            member.roles = [server.get_default_role()]
+            member.roles = [server.default_role]
             # update the roles
             for role in server.roles:
                 if role.id in data['roles']:
@@ -235,6 +237,9 @@ class ConnectionState:
 
     def parse_guild_delete(self, data):
         server = self._get_server(data.get('id'))
+        if server is None:
+            return
+
         if data.get('unavailable', False) and server is not None:
             # GUILD_DELETE with unavailable being True means that the
             # server that was available is now currently unavailable
@@ -242,12 +247,36 @@ class ConnectionState:
             self.dispatch('server_unavailable', server)
             return
 
+        # do a cleanup of the messages cache
+        self.messages = deque((msg for msg in self.messages if msg.server != server), maxlen=self.max_messages)
+
         try:
             self.servers.remove(server)
         except ValueError:
             return
         else:
             self.dispatch('server_remove', server)
+
+
+    def parse_guild_ban_add(self, data):
+        # we make the assumption that GUILD_BAN_ADD is done
+        # before GUILD_MEMBER_REMOVE is called
+        # hence we don't remove it from cache or do anything
+        # strange with it, the main purpose of this event
+        # is mainly to dispatch to another event worth listening to for logging
+        server = self._get_server(data.get('guild_id'))
+        if server is not None:
+            user_id = data.get('user', {}).get('id')
+            member = utils.get(server.members, id=user_id)
+            if member is not None:
+                self.dispatch('member_ban', member)
+
+    def parse_guild_ban_remove(self, data):
+        server = self._get_server(data.get('guild_id'))
+        if server is not None:
+            if 'user' in data:
+                user = User(**data['user'])
+                self.dispatch('member_unban', server, user)
 
     def parse_guild_role_create(self, data):
         server = self._get_server(data.get('guild_id'))
@@ -274,14 +303,16 @@ class ConnectionState:
         if server is not None:
             role_id = data['role']['id']
             role = utils.find(lambda r: r.id == role_id, server.roles)
-            role.update(**data['role'])
-            self.dispatch('server_role_update', role)
+            if role is not None:
+                old_role = copy.copy(role)
+                role.update(**data['role'])
+                self.dispatch('server_role_update', old_role, role)
 
     def parse_voice_state_update(self, data):
         server = self._get_server(data.get('guild_id'))
         if server is not None:
-            updated_member = server._update_voice_state(data)
-            self.dispatch('voice_state_update', updated_member)
+            updated_members = server._update_voice_state(data)
+            self.dispatch('voice_state_update', *updated_members)
 
     def parse_typing_start(self, data):
         channel = self.get_channel(data.get('channel_id'))

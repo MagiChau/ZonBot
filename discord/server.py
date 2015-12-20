@@ -29,9 +29,10 @@ from .role import Role
 from .member import Member
 from .channel import Channel
 from .enums import ServerRegion, Status
-from .mixins import EqualityComparable
+from .mixins import Hashable
+import copy
 
-class Server(EqualityComparable):
+class Server(Hashable):
     """Represents a Discord server.
 
     Supported Operations:
@@ -43,6 +44,8 @@ class Server(EqualityComparable):
     +-----------+--------------------------------------+
     | x != y    | Checks if two servers are not equal. |
     +-----------+--------------------------------------+
+    | hash(x)   | Returns the server's hash.           |
+    +-----------+--------------------------------------+
     | str(x)    | Returns the server's name.           |
     +-----------+--------------------------------------+
 
@@ -50,6 +53,9 @@ class Server(EqualityComparable):
     ----------
     name : str
         The server name.
+    me : :class:`Member`
+        Similar to :attr:`Client.user` except an instance of :class:`Member`.
+        This is essentially used to get the member version of yourself.
     roles
         A list of :class:`Role` that the server has available.
     region : :class:`ServerRegion`
@@ -89,11 +95,12 @@ class Server(EqualityComparable):
     def _update_voice_state(self, data):
         user_id = data.get('user_id')
         member = utils.find(lambda m: m.id == user_id, self.members)
+        before = copy.copy(member)
         if member is not None:
             ch_id = data.get('channel_id')
             channel = utils.find(lambda c: c.id == ch_id, self.channels)
             member.update_voice_state(voice_channel=channel, **data)
-        return member
+        return before, member
 
     def _from_data(self, guild):
         self.name = guild.get('name')
@@ -108,12 +115,11 @@ class Server(EqualityComparable):
         self.unavailable = guild.get('unavailable', False)
         self.id = guild['id']
         self.roles = [Role(everyone=(self.id == r['id']), **r) for r in guild['roles']]
-        default_role = self.get_default_role()
 
         owner_id = guild['owner_id']
 
         for data in guild.get('members', []):
-            roles = [default_role]
+            roles = [self.default_role]
             for role_id in data['roles']:
                 role = utils.find(lambda r: r.id == role_id, self.roles)
                 if role is not None:
@@ -149,13 +155,15 @@ class Server(EqualityComparable):
         for obj in guild.get('voice_states', []):
             self._update_voice_state(obj)
 
-    def get_default_role(self):
+    @utils.cached_property
+    def default_role(self):
         """Gets the @everyone role that all members have by default."""
-        return utils.find(lambda r: r.is_everyone(), self.roles)
+        return utils.find(lambda r: r.is_everyone, self.roles)
 
-    def get_default_channel(self):
+    @utils.cached_property
+    def default_channel(self):
         """Gets the default :class:`Channel` for the server."""
-        return utils.find(lambda c: c.is_default_channel(), self.channels)
+        return utils.find(lambda c: c.is_default, self.channels)
 
     @property
     def icon_url(self):

@@ -31,6 +31,21 @@ from base64 import b64encode
 import asyncio
 import json
 
+
+class cached_property:
+    def __init__(self, function):
+        self.function = function
+        self.__doc__ = getattr(function, '__doc__')
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
+        value = self.function(instance)
+        setattr(instance, self.function.__name__, value)
+
+        return value
+
 def parse_time(timestamp):
     if timestamp:
         return datetime.datetime(*map(int, re_split(r'[^\d]', timestamp.replace('+00:00', ''))))
@@ -43,15 +58,20 @@ def find(predicate, seq):
         member = find(lambda m: m.name == 'Mighty', channel.server.members)
 
     would find the first :class:`Member` whose name is 'Mighty' and return it.
+    If an entry is not found, then ``None`` is returned.
 
     This is different from `filter`_ due to the fact it stops the moment it finds
     a valid entry.
 
+
     .. _filter: https://docs.python.org/3.6/library/functions.html#filter
 
-    :param predicate: A function that returns a boolean-like result.
-    :param seq: The sequence to iterate through.
-    :return: The first result of the predicate that returned a ``True``-like value or ``None`` if nothing was found.
+    Parameters
+    -----------
+    predicate
+        A function that returns a boolean-like result.
+    seq : iterable
+        The iterable to search through.
     """
 
     for element in seq:

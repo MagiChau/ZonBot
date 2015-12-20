@@ -26,9 +26,9 @@ DEALINGS IN THE SOFTWARE.
 
 from .permissions import Permissions
 from .colour import Colour
-from .mixins import EqualityComparable
+from .mixins import Hashable
 
-class Role(EqualityComparable):
+class Role(Hashable):
     """Represents a Discord role in a :class:`Server`.
 
     Supported Operations:
@@ -39,6 +39,8 @@ class Role(EqualityComparable):
     | x == y    | Checks if two roles are equal.     |
     +-----------+------------------------------------+
     | x != y    | Checks if two roles are not equal. |
+    +-----------+------------------------------------+
+    | hash(x)   | Return the role's hash.            |
     +-----------+------------------------------------+
     | str(x)    | Returns the role's name.           |
     +-----------+------------------------------------+
@@ -51,8 +53,8 @@ class Role(EqualityComparable):
         The name of the role.
     permissions : :class:`Permissions`
         Represents the role's permissions.
-    color : :class:`Colour`
-        Represents the role colour.
+    colour : :class:`Colour`
+        Represents the role colour. An alias exists under ``color``.
     hoist : bool
          Indicates if the role will be displayed separately from other members.
     position : int
@@ -61,6 +63,9 @@ class Role(EqualityComparable):
         Indicates if the role is managed by the server through some form of
         integrations such as Twitch.
     """
+
+    __slots__ = ['id', 'name', 'permissions', 'color', 'colour', 'position',
+                 'managed', '_is_everyone', 'hoist' ]
 
     def __init__(self, **kwargs):
         self._is_everyone = kwargs.get('everyone', False)
@@ -81,6 +86,7 @@ class Role(EqualityComparable):
         if 'everyone' in kwargs:
             self._is_everyone = kwargs['everyone']
 
+    @property
     def is_everyone(self):
         """Checks if the role is the @everyone role."""
         return self._is_everyone

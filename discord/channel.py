@@ -28,11 +28,11 @@ from . import utils
 from .permissions import Permissions
 from .enums import ChannelType
 from collections import namedtuple
-from .mixins import EqualityComparable
+from .mixins import Hashable
 
 Overwrites = namedtuple('Overwrites', 'id allow deny type')
 
-class Channel(EqualityComparable):
+class Channel(Hashable):
     """Represents a Discord server channel.
 
     Supported Operations:
@@ -43,6 +43,8 @@ class Channel(EqualityComparable):
     | x == y    | Checks if two channels are equal.     |
     +-----------+---------------------------------------+
     | x != y    | Checks if two channels are not equal. |
+    +-----------+---------------------------------------+
+    | hash(x)   | Returns the channel's hash.           |
     +-----------+---------------------------------------+
     | str(x)    | Returns the channel's name.           |
     +-----------+---------------------------------------+
@@ -111,7 +113,8 @@ class Channel(EqualityComparable):
             override.permissions.handle_overwrite(allowed, denied)
             self.changed_roles.append(override)
 
-    def is_default_channel(self):
+    @property
+    def is_default(self):
         """bool : Indicates if this is the default channel for the :class:`Server` it belongs to."""
         return self.server.id == self.id
 
@@ -161,7 +164,7 @@ class Channel(EqualityComparable):
         if member.id == self.server.owner.id:
             return Permissions.all()
 
-        default = member.roles[0]
+        default = self.server.default_role
         base = deepcopy(default.permissions)
 
         # Apply server roles that the member has.
@@ -190,12 +193,12 @@ class Channel(EqualityComparable):
             tmp = Permissions.all_channel()
             base.value |= tmp.value
 
-        if self.is_default_channel():
+        if self.is_default:
             base.can_read_messages = True
 
         return base
 
-class PrivateChannel(EqualityComparable):
+class PrivateChannel(Hashable):
     """Represents a Discord private channel.
 
     Supported Operations:
@@ -206,6 +209,8 @@ class PrivateChannel(EqualityComparable):
     | x == y    | Checks if two channels are equal.               |
     +-----------+-------------------------------------------------+
     | x != y    | Checks if two channels are not equal.           |
+    +-----------+-------------------------------------------------+
+    | hash(x)   | Returns the channel's hash.                     |
     +-----------+-------------------------------------------------+
     | str(x)    | Returns the string "Direct Message with <User>" |
     +-----------+-------------------------------------------------+
@@ -219,6 +224,8 @@ class PrivateChannel(EqualityComparable):
     is_private : bool
         ``True`` if the channel is a private channel (i.e. PM). ``True`` in this case.
     """
+
+    __slots__ = ['user', 'id', 'is_private']
 
     def __init__(self, user, id, **kwargs):
         self.user = user

@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-class User(object):
+class User:
     """Represents a Discord user.
 
     Supported Operations:
@@ -35,6 +35,8 @@ class User(object):
     | x == y    | Checks if two users are equal.     |
     +-----------+------------------------------------+
     | x != y    | Checks if two users are not equal. |
+    +-----------+------------------------------------+
+    | hash(x)   | Return the user's hash.            |
     +-----------+------------------------------------+
     | str(x)    | Returns the user's name.           |
     +-----------+------------------------------------+
@@ -51,11 +53,13 @@ class User(object):
         The avatar hash the user has. Could be None.
     """
 
-    def __init__(self, username, id, discriminator, avatar, **kwargs):
-        self.name = username
-        self.id = id
-        self.discriminator = discriminator
-        self.avatar = avatar
+    __slots__ = ['name', 'id', 'discriminator', 'avatar']
+
+    def __init__(self, **kwargs):
+        self.name = kwargs.get('username')
+        self.id = kwargs.get('id')
+        self.discriminator = kwargs.get('discriminator')
+        self.avatar = kwargs.get('avatar')
 
     def __str__(self):
         return self.name
@@ -65,6 +69,9 @@ class User(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.id)
 
     @property
     def avatar_url(self):

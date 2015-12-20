@@ -105,15 +105,15 @@ class Client:
         self.token = None
         self.gateway = None
         self.voice = None
+        self.session_id = None
+        self.sequence = 0
         self.loop = asyncio.get_event_loop() if loop is None else loop
         self._listeners = []
         self.cache_auth = options.get('cache_auth', True)
 
-        max_messages = options.get('max_messages')
-        if max_messages is None or max_messages < 100:
-            max_messages = 5000
-
-        self.connection = ConnectionState(self.dispatch, max_messages)
+        self.max_messages = options.get('max_messages')
+        if self.max_messages is None or self.max_messages < 100:
+            self.max_messages = 5000
 
         # Blame React for this
         user_agent = 'DiscordBot (https://github.com/Rapptz/discord.py {0}) Python/{1[0]}.{1[1]} aiohttp/{2}'
@@ -123,8 +123,9 @@ class Client:
             'user-agent': user_agent.format(library_version, sys.version_info, aiohttp.__version__)
         }
 
-        self._closed = False
-        self._is_logged_in = False
+        self._closed = asyncio.Event(loop=self.loop)
+        self._is_logged_in = asyncio.Event(loop=self.loop)
+        self._is_ready = asyncio.Event(loop=self.loop)
 
         # These two events correspond to the two events necessary
         # for a connection to be made
@@ -152,7 +153,7 @@ class Client:
                 log.info('login cache token check succeeded')
                 data = yield from check.json()
                 self.gateway = data.get('url')
-                self._is_logged_in = True
+                self._is_logged_in.set()
                 return
             else:
                 # failed auth check
@@ -180,7 +181,6 @@ class Client:
             log.info('a problem occurred while updating the login cache')
             pass
 
-
     def handle_message(self, message):
         removed = []
         for i, (condition, future) in enumerate(self._listeners):
@@ -202,11 +202,14 @@ class Client:
         for idx in reversed(removed):
             del self._listeners[idx]
 
+    def handle_ready(self):
+        self._is_ready.set()
+
     def _resolve_mentions(self, content, mentions):
         if isinstance(mentions, list):
             return [user.id for user in mentions]
         elif mentions == True:
-            return re.findall(r'<@(\d+)>', content)
+            return re.findall(r'<@([0-9]+)>', content)
         else:
             return []
 
@@ -238,15 +241,14 @@ class Client:
             raise InvalidArgument('Destination must be Channel, PrivateChannel, User, or Object')
 
     def __getattr__(self, name):
-        if name in ('user', 'email', 'servers', 'private_channels', 'messages'):
+        if name in ('user', 'servers', 'private_channels', 'messages'):
             return getattr(self.connection, name)
         else:
             msg = "'{}' object has no attribute '{}'"
             raise AttributeError(msg.format(self.__class__, name))
 
     def __setattr__(self, name, value):
-        if name in ('user', 'email', 'servers', 'private_channels',
-                    'messages'):
+        if name in ('user', 'servers', 'private_channels', 'messages'):
             return setattr(self.connection, name, value)
         else:
             object.__setattr__(self, name, value)
@@ -285,7 +287,7 @@ class Client:
     @asyncio.coroutine
     def keep_alive_handler(self, interval):
         try:
-            while not self._closed:
+            while not self.is_closed:
                 payload = {
                     'op': 1,
                     'd': int(time.time())
@@ -311,12 +313,22 @@ class Client:
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
 
+    @asyncio.coroutine
     def received_message(self, msg):
         log.debug('WebSocket Event: {}'.format(msg))
         self.dispatch('socket_response', msg)
 
         op = msg.get('op')
         data = msg.get('d')
+
+        if 's' in msg:
+            self.sequence = msg['s']
+
+        if op == 7:
+            # redirect op code
+            yield from self.ws.close()
+            yield from self.redirect_websocket(data.get('url'))
+            return
 
         if op != 0:
             log.info('Unhandled op {}'.format(op))
@@ -325,6 +337,10 @@ class Client:
         event = msg.get('t')
 
         if event == 'READY':
+            self.connection = ConnectionState(self.dispatch, self.max_messages)
+            self.session_id = data['session_id']
+
+        if event == 'READY' or event == 'RESUMED':
             interval = data['heartbeat_interval'] / 1000.0
             self.keep_alive = utils.create_task(self.keep_alive_handler(interval), loop=self.loop)
 
@@ -341,52 +357,83 @@ class Client:
         if event in ('READY', 'MESSAGE_CREATE', 'MESSAGE_DELETE',
                      'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'USER_UPDATE',
                      'CHANNEL_DELETE', 'CHANNEL_UPDATE', 'CHANNEL_CREATE',
-                     'GUILD_MEMBER_ADD', 'GUILD_MEMBER_REMOVE', 'GUILD_UPDATE'
+                     'GUILD_MEMBER_ADD', 'GUILD_MEMBER_REMOVE', 'GUILD_UPDATE',
                      'GUILD_MEMBER_UPDATE', 'GUILD_CREATE', 'GUILD_DELETE',
                      'GUILD_ROLE_CREATE', 'GUILD_ROLE_DELETE', 'TYPING_START',
-                     'GUILD_ROLE_UPDATE', 'VOICE_STATE_UPDATE'):
+                     'GUILD_ROLE_UPDATE', 'VOICE_STATE_UPDATE',
+                     'GUILD_BAN_ADD', 'GUILD_BAN_REMOVE'):
             parser = 'parse_' + event.lower()
             getattr(self.connection, parser)(data)
         else:
             log.info("Unhandled event {}".format(event))
 
     @asyncio.coroutine
-    def _make_websocket(self):
+    def _make_websocket(self, initial=True):
         if not self.is_logged_in:
             raise ClientException('You must be logged in to connect')
 
         self.ws = yield from websockets.connect(self.gateway, loop=self.loop)
         self.ws.max_size = None
         log.info('Created websocket connected to {0.gateway}'.format(self))
+
+        if initial:
+            payload = {
+                'op': 2,
+                'd': {
+                    'token': self.token,
+                    'properties': {
+                        '$os': sys.platform,
+                        '$browser': 'discord.py',
+                        '$device': 'discord.py',
+                        '$referrer': '',
+                        '$referring_domain': ''
+                    },
+                    'v': 3
+                }
+            }
+
+            yield from self.ws.send(utils.to_json(payload))
+            log.info('sent the initial payload to create the websocket')
+
+    @asyncio.coroutine
+    def redirect_websocket(self, url):
+        # if we get redirected then we need to recreate the websocket
+        # when this recreation happens we have to try to do a reconnection
+        log.info('redirecting websocket from {} to {}'.format(self.gateway, url))
+        self.keep_alive_handler.cancel()
+
+        self.gateway = url
+        yield from self._make_websocket(initial=False)
+        yield from self._reconnect_ws()
+
+        if self.is_voice_connected():
+            # update the websocket reference pointed to by voice
+            self.voice.main_ws = self.ws
+
+    @asyncio.coroutine
+    def _reconnect_ws(self):
         payload = {
-            'op': 2,
+            'op': 6,
             'd': {
-                'token': self.token,
-                'properties': {
-                    '$os': sys.platform,
-                    '$browser': 'discord.py',
-                    '$device': 'discord.py',
-                    '$referrer': '',
-                    '$referring_domain': ''
-                },
-                'v': 3
+                'session_id': self.session_id,
+                'seq': self.sequence
             }
         }
 
+        log.info('sending reconnection frame to websocket {}'.format(payload))
         yield from self.ws.send(utils.to_json(payload))
-        log.info('sent the initial payload to create the websocket')
 
     # properties
 
     @property
     def is_logged_in(self):
         """bool: Indicates if the client has logged in successfully."""
-        return self._is_logged_in
+        return self._is_logged_in.is_set()
 
     @property
     def is_closed(self):
         """bool: Indicates if the websocket connection is closed."""
-        return self._closed
+        return self._closed.is_set()
 
     # helpers/getters
 
@@ -428,6 +475,27 @@ class Client:
             for member in server.members:
                 yield member
 
+    # listeners/waiters
+
+    @asyncio.coroutine
+    def wait_for_ready(self):
+        """|coro|
+
+        This coroutine waits until the client is all ready. This could be considered
+        another way of asking for :func:`discord.on_ready` except meant for your own
+        background tasks.
+        """
+        yield from self._is_ready.wait()
+
+    @asyncio.coroutine
+    def wait_for_login(self):
+        """|coro|
+
+        This coroutine waits until the client is logged on successfully. This
+        is different from waiting until the client's state is all ready. For
+        that check :func:`discord.on_ready` and :meth:`wait_for_ready`.
+        """
+        yield from self._is_logged_in.wait()
 
     @asyncio.coroutine
     def wait_for_message(self, timeout=None, *, author=None, channel=None, content=None, check=None):
@@ -572,7 +640,7 @@ class Client:
         # attempt to read the token from cache
         if self.cache_auth:
             yield from self._login_via_cache(email, password)
-            if self._is_logged_in:
+            if self.is_logged_in:
                 return
 
         payload = {
@@ -583,10 +651,12 @@ class Client:
         data = utils.to_json(payload)
         resp = yield from aiohttp.post(endpoints.LOGIN, data=data, headers=self.headers, loop=self.loop)
         log.debug(request_logging_format.format(method='POST', response=resp))
-        if resp.status == 400:
-            raise LoginFailure('Improper credentials have been passed.')
-        elif resp.status != 200:
-            raise HTTPException(resp, None)
+        if resp.status != 200:
+            yield from resp.release()
+            if resp.status == 400:
+                raise LoginFailure('Improper credentials have been passed.')
+            else:
+                raise HTTPException(resp, None)
 
         log.info('logging in returned status code {}'.format(resp.status))
         self.email = email
@@ -594,7 +664,7 @@ class Client:
         body = yield from resp.json()
         self.token = body['token']
         self.headers['authorization'] = self.token
-        self._is_logged_in = True
+        self._is_logged_in.set()
         self.gateway = yield from self._get_gateway()
 
         # since we went through all this trouble
@@ -610,7 +680,7 @@ class Client:
         response = yield from aiohttp.post(endpoints.LOGOUT, headers=self.headers, loop=self.loop)
         yield from response.release()
         yield from self.close()
-        self._is_logged_in = False
+        self._is_logged_in.clear()
         log.debug(request_logging_format.format(method='POST', response=response))
 
     @asyncio.coroutine
@@ -632,13 +702,17 @@ class Client:
         """
         yield from self._make_websocket()
 
-        while not self._closed:
+        while not self.is_closed:
             msg = yield from self.ws.recv()
             if msg is None:
-                yield from self.close()
-                break
+                if self.ws.close_code == 1012:
+                    yield from self.redirect_websocket(self.gateway)
+                    continue
+                else:
+                    yield from self.close()
+                    break
 
-            self.received_message(json.loads(msg))
+            yield from self.received_message(json.loads(msg))
 
     @asyncio.coroutine
     def close(self):
@@ -646,17 +720,19 @@ class Client:
 
         To reconnect the websocket connection, :meth:`connect` must be used.
         """
-        if self._closed:
+        if self.is_closed:
             return
 
         if self.is_voice_connected():
             yield from self.voice.disconnect()
             self.voice = None
 
-        yield from self.ws.close()
-        self.keep_alive.cancel()
-        self._closed = True
+        if self.ws.open:
+            yield from self.ws.close()
 
+        self.keep_alive.cancel()
+        self._closed.set()
+        self._is_ready.clear()
 
     @asyncio.coroutine
     def start(self, email, password):
@@ -1110,9 +1186,12 @@ class Client:
         while limit > 0:
             retrieve = limit if limit <= 100 else 100
             data = yield from self._logs_from(channel, retrieve, before, after)
-            limit -= retrieve
-            result.extend(data)
-            before = Object(id=data[-1]['id'])
+            if len(data):
+                limit -= retrieve
+                result.extend(data)
+                before = Object(id=data[-1]['id'])
+            else:
+                break
 
         return generator(result)
 
@@ -1150,7 +1229,7 @@ class Client:
         yield from response.release()
 
     @asyncio.coroutine
-    def ban(self, member):
+    def ban(self, member, delete_message_days=1):
         """|coro|
 
         Bans a :class:`Member` from the server they belong to.
@@ -1165,6 +1244,9 @@ class Client:
         -----------
         member : :class:`Member`
             The member to ban from their server.
+        delete_message_days : int
+            The number of days worth of messages to delete from the user
+            in the server. The minimum is 0 and the maximum is 7.
 
         Raises
         -------
@@ -1174,28 +1256,28 @@ class Client:
             Banning failed.
         """
 
+        params = {
+            'delete-message-days': delete_message_days
+        }
+
         url = '{0}/{1.server.id}/bans/{1.id}'.format(endpoints.SERVERS, member)
-        response = yield from aiohttp.put(url, headers=self.headers, loop=self.loop)
+        response = yield from aiohttp.put(url, params=params, headers=self.headers, loop=self.loop)
         log.debug(request_logging_format.format(method='PUT', response=response))
         yield from utils._verify_successful_response(response)
         yield from response.release()
 
     @asyncio.coroutine
-    def unban(self, member):
+    def unban(self, server, user):
         """|coro|
 
-        Unbans a :class:`Member` from the server they belong to.
-
-        Warning
-        --------
-        This function unbans the :class:`Member` based on the server it
-        belongs to, which is accessed via :attr:`Member.server`. So you
-        must have the proper permissions in that server.
+        Unbans a :class:`User` from the server they are banned from.
 
         Parameters
         -----------
-        member : :class:`Member`
-            The member to unban from their server.
+        server : :class:`Server`
+            The server to unban the user from.
+        user : :class:`User`
+            The user to unban.
 
         Raises
         -------
@@ -1205,7 +1287,7 @@ class Client:
             Unbanning failed.
         """
 
-        url = '{0}/{1.server.id}/bans/{1.id}'.format(endpoints.SERVERS, member)
+        url = '{0}/{1.id}/bans/{2.id}'.format(endpoints.SERVERS, server, user)
         response = yield from aiohttp.delete(url, headers=self.headers, loop=self.loop)
         log.debug(request_logging_format.format(method='DELETE', response=response))
         yield from utils._verify_successful_response(response)
@@ -1332,12 +1414,12 @@ class Client:
         The game_id parameter is a numeric ID (not a string) that represents
         a game being played currently. The list of game_id to actual games changes
         constantly and would thus be out of date pretty quickly. An old version of
-        the game_id database can be seen `here`_ to help you get started.
+        the game_id database can be seen `here <game_list>`_ to help you get started.
 
         The idle parameter is a boolean parameter that indicates whether the
         client should go idle or not.
 
-        .. _here: https://gist.github.com/Rapptz/a82b82381b70a60c281b
+        .. _game_list: https://gist.github.com/Rapptz/a82b82381b70a60c281b
 
         Parameters
         ----------
@@ -1637,7 +1719,7 @@ class Client:
     def get_bans(self, server):
         """|coro|
 
-        Retrieves all the :class:`User`s that are banned from the specified
+        Retrieves all the :class:`User` s that are banned from the specified
         server.
 
         You must have proper permissions to get this information.
@@ -2006,7 +2088,7 @@ class Client:
             Adding roles failed.
         """
 
-        new_roles = [role.id for role in itertools.chain(member.roles, roles)]
+        new_roles = {role.id for role in itertools.chain(member.roles, roles)}
         yield from self._replace_roles(member, *new_roles)
 
     @asyncio.coroutine
@@ -2034,7 +2116,7 @@ class Client:
             Removing roles failed.
         """
         new_roles = {role.id for role in member.roles}
-        new_roles = new_roles.difference(roles)
+        new_roles = new_roles.difference(role.id for role in roles)
         yield from self._replace_roles(member, *new_roles)
 
     @asyncio.coroutine
@@ -2067,7 +2149,7 @@ class Client:
             Removing roles failed.
         """
 
-        new_roles = [role.id for role in roles]
+        new_roles = {role.id for role in roles}
         yield from self._replace_roles(member, *new_roles)
 
     @asyncio.coroutine
@@ -2210,7 +2292,6 @@ class Client:
         yield from utils._verify_successful_response(response)
         yield from response.release()
 
-
     # Voice management
 
     @asyncio.coroutine
@@ -2283,7 +2364,6 @@ class Client:
         self.voice = VoiceClient(**kwargs)
         yield from self.voice.connect()
         return self.voice
-
 
     def is_voice_connected(self):
         """bool : Indicates if we are currently connected to a voice channel."""
