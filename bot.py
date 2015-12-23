@@ -44,7 +44,6 @@ class Bot(Client):
 	@asyncio.coroutine
 	def baka_command(self, message):
 		filepath = (sys.path[0] + '/res/baka.jpg')
-		print(filepath)
 		with open(filepath, 'rb') as picture:
 			yield from self.send_file(message.channel, picture)
 
