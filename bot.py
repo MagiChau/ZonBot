@@ -25,6 +25,7 @@ class Bot(Client):
 	def set_commands(self):
 		self.commands = {
 			"!acceptinvite": self.accept_invite_command,
+			"!baka": self.baka_command,
 			"!card": self.hearthstone_card_lookup_command,
 			"!cuck": self.cuck_command,
 			"!eval": self.eval_command,
@@ -39,6 +40,13 @@ class Bot(Client):
 		if self.ownerID == message.author.id:
 			if message.content.startswith("!acceptinvite "):
 				yield from self.accept_invite(message.content[14:])
+
+	@asyncio.coroutine
+	def baka_command(self, message):
+		filepath = (sys.path[0] + '/res/baka.jpg')
+		print(filepath)
+		with open(filepath, 'rb') as picture:
+			yield from self.send_file(message.channel, picture)
 
 	@asyncio.coroutine
 	def cuck_command(self, message):
