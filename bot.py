@@ -2,8 +2,8 @@
 import asyncio
 import configparser
 import random
+import re
 import sys
-import discord
 from discord import *
 from twitch_stream_notifier import TwitchStreamNotifier
 import hs_card_lookup
@@ -30,6 +30,7 @@ class Bot(Client):
 			"!eval": self.eval_command,
 			"!info": self.info_command,
 			"!help": self.help_command,
+			"!whois": self.whois_command,
 			"(╯°□°）╯︵ ┻━┻": self.unflip_command,
 			"┬─┬﻿ ノ( ゜-゜ノ)": self.flip_command}
 
@@ -167,6 +168,30 @@ class Bot(Client):
 		yield from self.send_message(message.channel, "(╯°□°）╯︵ ┻━┻")
 
 	@asyncio.coroutine
+	def set_gameid_command(self, message):
+		pass
+
+	@asyncio.coroutine
+	def whois_command(self, message):
+		if message.content.startswith('!whois '):
+			user = message.content[len('!whois '):]
+			match = re.fullmatch(r'<@[0-9]+>', user)
+			if match:
+				user = match.string[2:-1]
+				found_user = utils.get(message.server.members, id = user)
+			else:
+				if re.fullmatch(r'[0-9]+', user):
+					found_user = utils.get(message.server.members, id = user)
+				else:
+					found_user = utils.get(message.server.members, name = user)
+
+			if found_user:
+				output = "```Name: {}\nID: {}\nJoined Server On: {}/{}/{}```".format(found_user.name, found_user.id, \
+					found_user.joined_at.month, found_user.joined_at.day, found_user.joined_at.year)
+				yield from self.send_message(message.channel, output)
+
+
+	@asyncio.coroutine
 	def list_delimited_text(self, message, delimiter1, delimiter2):
 		result_list = []
 		search_text = message.content
@@ -182,7 +207,7 @@ class Bot(Client):
 	@asyncio.coroutine
 	def on_ready(self):
 		print("Bot is connected")
-		yield from self.twitch_notifier.run()
+		#yield from self.twitch_notifier.run()
 
 	@asyncio.coroutine
 	def on_message(self, message):

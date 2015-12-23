@@ -58,7 +58,7 @@ class TwitchStreamNotifier():
 
 	@asyncio.coroutine
 	def notify_stream_online(self, stream):
-		current_status = yield from self.check_stream_online(stream)
+		current_status = (yield from self.check_stream_online(stream))
 		if self.streams[stream] == False and current_status == True:
 			self.streams[stream] = True
 			for channel in self.notified_channels:
