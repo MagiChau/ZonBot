@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import configparser
+import copy
 import discord
 import json
 import sys
@@ -38,10 +39,15 @@ class TwitchStreamNotifier():
 
 	async def update_stream_list(self, filepath):
 		"""Retrieves the list of streams to check from a config file"""
+		copy_streams = copy.deepcopy(self.streams)
 		self.streams = {}
 		with open(filepath, 'r') as stream_file:
 			for line in stream_file:
 				self.streams.update({line.strip():False})
+
+		for stream in self.streams:
+			if stream in copy_streams:
+				self.streams.update([(stream, copy_streams[stream])])
 
 	async def check_stream_online(self, stream_name):
 		url = self.TWITCH_API_BASE_URL + 'streams/' + stream_name
