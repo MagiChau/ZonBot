@@ -73,7 +73,10 @@ class Bot(discord.Client):
 	async def eval_command(self, message):
 		if self.ownerID == message.author.id:
 			if message.content.startswith("!eval "):
-				output = '```python\n' + str(eval(message.content[6:])) + '```'
+				code = eval(message.content[6:])
+				if asyncio.iscoroutine(code):
+					code = await code
+				output = '```python\n' + str(code) + '```'
 				await self.send_message(message.channel, output)
 
 	
