@@ -38,73 +38,64 @@ class Bot(discord.Client):
 			"(╯°□°）╯︵ ┻━┻": self.unflip_command,
 			"┬─┬﻿ ノ( ゜-゜ノ)": self.flip_command}
 
-	@asyncio.coroutine
-	def accept_invite_command(self, message):
+	async def accept_invite_command(self, message):
 		if self.ownerID == message.author.id:
 			if message.content.startswith("!acceptinvite "):
-				yield from self.accept_invite(message.content[14:])
+				await self.accept_invite(message.content[14:])
 
-	@asyncio.coroutine
-	def baka_command(self, message):
+	async def baka_command(self, message):
 		filepath = (sys.path[0] + '/res/baka.jpg')
 		with open(filepath, 'rb') as picture:
-			yield from self.send_file(message.channel, picture)
+			await self.send_file(message.channel, picture)
 
-	@asyncio.coroutine
-	def nobully_command(self, message):
+	async def nobully_command(self, message):
 		filepath = (sys.path[0] + '/res/nobully.jpg')
 		with open(filepath, 'rb') as picture:
-			yield from self.send_file(message.channel, picture)
+			await self.send_file(message.channel, picture)
 
-	@asyncio.coroutine
-	def channelinfo_command(self, message):
+	async def channelinfo_command(self, message):
 		if message.server is not None:
 			output = "```Channel Name: {}\nChannel ID: {}".format(message.channel.name, message.channel.id)
 			output = output + "\nServer Name: {}\nServer ID: {}```".format(message.server.name, message.server.id)
 		else:
 			output = "```Channel ID: {}```".format(message.channel.id)
-		yield from self.send_message(message.channel, output)
+		await self.send_message(message.channel, output)
 
-	@asyncio.coroutine
-	def cuck_command(self, message):
+	async def cuck_command(self, message):
 		if message.content.startswith("!cuck "):
 			name = message.content[6:]
 
 			if random.randint(0, 99) < 50:
-				yield from self.send_message(message.channel, "{} is a cuck".format(name))
+				await self.send_message(message.channel, "{} is a cuck".format(name))
 			else:
-				yield from self.send_message(message.channel, "{} is a cuck".format(message.author.name))
+				await self.send_message(message.channel, "{} is a cuck".format(message.author.name))
 
-	@asyncio.coroutine
-	def eval_command(self, message):
-		white_listed_channels = ["119882119898988546", "96378857971531776"]
-		if self.ownerID == message.author.id and message.channel.id in white_listed_channels:
+	async def eval_command(self, message):
+		if self.ownerID == message.author.id:
 			if message.content.startswith("!eval "):
 				output = '```python\n' + str(eval(message.content[6:])) + '```'
-				yield from self.send_message(message.channel, output)
+				await self.send_message(message.channel, output)
 
 	
-	@asyncio.coroutine
-	def hearthstone_card_lookup_command(self, message):
+	async def hearthstone_card_lookup_command(self, message):
 		if message.content.startswith("!card "):
 			query = message.content[6:]
 			results = hs_card_lookup.find_matches(query, 0.5)
 			if len(results) > 0:
 				results.sort(key=lambda x: x[1], reverse = True)
-				output = yield from self.format_hearthstone_card(results[0][0])
+				output = await self.format_hearthstone_card(results[0][0])
 			else:
 				output = "Card not found"
 
-			yield from self.send_message(message.channel, output)
+			await self.send_message(message.channel, output)
 
-	@asyncio.coroutine
-	def format_hearthstone_card(self, card):
+	async def format_hearthstone_card(self, card):
 		card_type = card['type']
 		card_text = ""
 		flavor_text = ""
 		player_class = ""
 
-		def remove_tags(text):
+		async def remove_tags(text):
 			new_text = text
 
 			#Remove Spell Damage Character
@@ -129,9 +120,9 @@ class Bot(discord.Client):
 			return new_text
 
 		if 'text' in card:
-			card_text = remove_tags(card['text'])
+			card_text = await remove_tags(card['text'])
 		if 'flavor' in card:
-			flavor_text = remove_tags(card['flavor'])
+			flavor_text = await remove_tags(card['flavor'])
 			if card_text != "":
 				flavor_text = ' - ' + flavor_text
 		if card_type == 'Minion':
@@ -153,14 +144,12 @@ class Bot(discord.Client):
 				card['cost'], player_class, card['expansion'], card_text, flavor_text)
 		return output
 
-	@asyncio.coroutine
-	def info_command(self, message):
+	async def info_command(self, message):
 		text = "Bot owned by ZonMachi\nDeveloped using the Discord.py library https://github.com/Rapptz/discord.py/"
 		text = text + '\nCurrently connected to {} servers'.format(str(len(self.servers))) 
-		yield from self.send_message(message.channel, text)
+		await self.send_message(message.channel, text)
 
-	@asyncio.coroutine
-	def help_command(self, message):
+	async def help_command(self, message):
 		if message.content == "!help":
 			help_message_base = "Commands: "
 			help_message = ""
@@ -182,25 +171,21 @@ class Bot(discord.Client):
 		elif message.content == "!help info":
 			help_message = 'Usage: !info\nDisplays information about the bot.'
 
-		yield from self.send_message(message.channel, help_message)
+		await self.send_message(message.channel, help_message)
 
-	@asyncio.coroutine
-	def unflip_command(self, message):
-		yield from self.send_message(message.channel, "┬─┬﻿ ノ( ゜-゜ノ)")
+	async def unflip_command(self, message):
+		await self.send_message(message.channel, "┬─┬﻿ ノ( ゜-゜ノ)")
 
-	@asyncio.coroutine
-	def flip_command(self, message):
-		yield from self.send_message(message.channel, "(╯°□°）╯︵ ┻━┻")
+	async def flip_command(self, message):
+		await self.send_message(message.channel, "(╯°□°）╯︵ ┻━┻")
 
-	@asyncio.coroutine
-	def setgame_command(self, message):
+	async def setgame_command(self, message):
 		if message.author.id == self.ownerID and message.content.startswith("!setgame "):
 			game_name = message.content[len("!setgame "):]
-			yield from self.change_status(discord.Game(name=game_name))
+			await self.change_status(discord.Game(name=game_name))
 
 
-	@asyncio.coroutine
-	def whois_command(self, message):
+	async def whois_command(self, message):
 		if message.content.startswith('!whois '):
 			user = message.content[len('!whois '):]
 			match = re.fullmatch(r'<@[0-9]+>', user)
@@ -216,11 +201,10 @@ class Bot(discord.Client):
 			if found_user:
 				output = "```Name: {}\nID: {}\nJoined Server On: {}/{}/{}```".format(found_user.name, found_user.id, \
 					found_user.joined_at.month, found_user.joined_at.day, found_user.joined_at.year)
-				yield from self.send_message(message.channel, output)
+				await self.send_message(message.channel, output)
 
 
-	@asyncio.coroutine
-	def list_delimited_text(self, message, delimiter1, delimiter2):
+	async def list_delimited_text(self, message, delimiter1, delimiter2):
 		result_list = []
 		search_text = message.content
 		while delimiter1 in search_text and delimiter2 in search_text:
@@ -232,31 +216,29 @@ class Bot(discord.Client):
 				search_text = search_text[pos_second_delimiter + 1:]
 		return result_list
 
-	@asyncio.coroutine
-	def on_ready(self):
+	async def on_ready(self):
 		print("Bot is connected")
 
-	@asyncio.coroutine
-	def on_message(self, message):
+	async def on_message(self, message):
 		if message.author != self.user:
 			command = message.content
 			if command in self.commands:
-				yield from self.commands[command](message)
+				await self.commands[command](message)
 			else:
 				command = message.content.split(' ')[0]
 				if command in self.commands:
-					yield from self.commands[command](message)
+					await self.commands[command](message)
 				else:
 					#search for delimited text
-					hearthstone_queries = yield from self.list_delimited_text(message, '[', ']')
+					hearthstone_queries = await self.list_delimited_text(message, '[', ']')
 					output = ""
 					for query in hearthstone_queries:
 						results = hs_card_lookup.find_matches(query, 0.5)
 						if len(results) > 0:
 							results.sort(key=lambda x: x[1], reverse = True)
-							output  = output + (yield from self.format_hearthstone_card(results[0][0])) +'\n\n'
+							output  = output + (await self.format_hearthstone_card(results[0][0])) +'\n\n'
 					if output != "":
-						yield from self.send_message(message.channel, output[:-2])
+						await self.send_message(message.channel, output[:-2])
 
 	def run(self):
 		yield from self.start(self.email, self.password)
