@@ -4,13 +4,13 @@ import configparser
 import random
 import re
 import sys
-from discord import *
+import discord
 from twitch_stream_notifier import TwitchStreamNotifier
 import hs_card_lookup
 
-class Bot(Client):
+class Bot(discord.Client):
 	def __init__(self):
-		super(Bot, self).__init__()
+		super().__init__()
 		self.set_config_vars()
 		self.set_commands()
 		self.twitch_notifier = TwitchStreamNotifier(self)
@@ -27,10 +27,13 @@ class Bot(Client):
 			"!acceptinvite": self.accept_invite_command,
 			"!baka": self.baka_command,
 			"!card": self.hearthstone_card_lookup_command,
+			"!channelinfo": self.channelinfo_command,
 			"!cuck": self.cuck_command,
 			"!eval": self.eval_command,
-			"!info": self.info_command,
 			"!help": self.help_command,
+			"!info": self.info_command,
+			"!nobully": self.nobully_command,			
+			"!setgame": self.setgame_command,
 			"!whois": self.whois_command,
 			"(╯°□°）╯︵ ┻━┻": self.unflip_command,
 			"┬─┬﻿ ノ( ゜-゜ノ)": self.flip_command}
@@ -46,6 +49,21 @@ class Bot(Client):
 		filepath = (sys.path[0] + '/res/baka.jpg')
 		with open(filepath, 'rb') as picture:
 			yield from self.send_file(message.channel, picture)
+
+	@asyncio.coroutine
+	def nobully_command(self, message):
+		filepath = (sys.path[0] + '/res/nobully.jpg')
+		with open(filepath, 'rb') as picture:
+			yield from self.send_file(message.channel, picture)
+
+	@asyncio.coroutine
+	def channelinfo_command(self, message):
+		if message.server is not None:
+			output = "```Channel Name: {}\nChannel ID: {}".format(message.channel.name, message.channel.id)
+			output = output + "\nServer Name: {}\nServer ID: {}```".format(message.server.name, message.server.id)
+		else:
+			output = "```Channel ID: {}```".format(message.channel.id)
+		yield from self.send_message(message.channel, output)
 
 	@asyncio.coroutine
 	def cuck_command(self, message):
@@ -175,8 +193,11 @@ class Bot(Client):
 		yield from self.send_message(message.channel, "(╯°□°）╯︵ ┻━┻")
 
 	@asyncio.coroutine
-	def set_gameid_command(self, message):
-		pass
+	def setgame_command(self, message):
+		if message.author.id == self.ownerID and message.content.startswith("!setgame "):
+			game_name = message.content[len("!setgame "):]
+			yield from self.change_status(discord.Game(name=game_name))
+
 
 	@asyncio.coroutine
 	def whois_command(self, message):
@@ -214,7 +235,6 @@ class Bot(Client):
 	@asyncio.coroutine
 	def on_ready(self):
 		print("Bot is connected")
-		#yield from self.twitch_notifier.run()
 
 	@asyncio.coroutine
 	def on_message(self, message):
@@ -244,7 +264,7 @@ class Bot(Client):
 def main():
 	bot = Bot()
 	loop = asyncio.get_event_loop()
-	#asyncio.BaseEventLoop.set_debug(loop, True)
+	loop.create_task(bot.twitch_notifier.run())
 	loop.run_until_complete(bot.run())
 	loop.close()
 
