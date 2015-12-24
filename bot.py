@@ -4,6 +4,7 @@ import configparser
 import random
 import re
 import sys
+import time
 import discord
 from twitch_stream_notifier import TwitchStreamNotifier
 import hs_card_lookup
@@ -14,6 +15,7 @@ class Bot(discord.Client):
 		self.set_config_vars()
 		self.set_commands()
 		self.twitch_notifier = TwitchStreamNotifier(self)
+		self.start_time = None
 
 	def set_config_vars(self):
 		config = configparser.ConfigParser()
@@ -34,6 +36,7 @@ class Bot(discord.Client):
 			"!info": self.info_command,
 			"!nobully": self.nobully_command,			
 			"!setgame": self.setgame_command,
+			"!uptime": self.uptime_command,
 			"!whois": self.whois_command,
 			"(╯°□°）╯︵ ┻━┻": self.unflip_command,
 			"┬─┬﻿ ノ( ゜-゜ノ)": self.flip_command}
@@ -190,6 +193,29 @@ class Bot(discord.Client):
 			game_name = message.content[len("!setgame "):]
 			await self.change_status(discord.Game(name=game_name))
 
+	async def uptime_command(self, message):
+		seconds = int(time.time() - self.start_time)
+		minutes = seconds // 60
+		seconds -= minutes * 60
+		hours = minutes // 60
+		minutes -= hours * 60
+		days = hours // 24
+		hours -= days * 24
+
+		#takes a numerical time and what it corresponds to e.g. hours and return a string
+		def parse_time(time, time_type):
+			if time > 0:
+				return ' ' + str(time) + ' ' + time_type
+			else:
+				return ''
+
+		seconds = parse_time(seconds, 'seconds')
+		minutes = parse_time(minutes, 'minutes')
+		hours = parse_time(hours, 'hours')
+		days = parse_time(days, 'days')
+
+		output = "ZonBot has been up for{}{}{}{}".format(days, hours, minutes, seconds)
+		await self.send_message(message.channel, output)
 
 	async def whois_command(self, message):
 		if message.content.startswith('!whois '):
@@ -223,6 +249,7 @@ class Bot(discord.Client):
 		return result_list
 
 	async def on_ready(self):
+		self.start_time = time.time()
 		print("Bot is connected")
 
 	async def on_message(self, message):
