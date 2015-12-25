@@ -4,6 +4,7 @@ import configparser
 import copy
 import discord
 import json
+from os import path
 import sys
 
 async def create_TwitchStreamNotifier(client, client_id):
@@ -21,7 +22,7 @@ class TwitchStreamNotifier():
 		self.headers = dict()
 		self.headers.update({'Client-ID':self.client_id})
 		self.headers.update({'version':'Accept: application/vnd.twitchtv.v3+json'})
-		self.stream_filepath = sys.path[0] + '/stream_list'
+		self.stream_filepath = path.join(sys.path[0] + '/stream_list')
 		self.create_stream_list(self.stream_filepath)
 		self.notified_channels = ["96378857971531776"]
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import configparser
+from os import path
 import random
 import re
 import sys
@@ -19,7 +20,7 @@ class Bot(discord.Client):
 
 	def set_config_vars(self):
 		config = configparser.ConfigParser()
-		config.read(sys.path[0] + "/config.ini")
+		config.read(path.join(sys.path[0] + "/config.ini"))
 		self.email = config['LOGIN']['email']
 		self.password = config['LOGIN']['password']
 		self.ownerID = config['OWNER']['id']
@@ -47,12 +48,12 @@ class Bot(discord.Client):
 				await self.accept_invite(message.content[14:])
 
 	async def baka_command(self, message):
-		filepath = (sys.path[0] + '/res/baka.jpg')
+		filepath = path.join((sys.path[0] + '/res/baka.jpg'))
 		with open(filepath, 'rb') as picture:
 			await self.send_file(message.channel, picture)
 
 	async def nobully_command(self, message):
-		filepath = (sys.path[0] + '/res/nobully.jpg')
+		filepath = path.join((sys.path[0] + '/res/nobully.jpg'))
 		with open(filepath, 'rb') as picture:
 			await self.send_file(message.channel, picture)
 
