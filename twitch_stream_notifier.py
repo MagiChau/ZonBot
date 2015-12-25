@@ -5,11 +5,13 @@ import copy
 import discord
 import json
 from os import path
+import sqlite3
 import sys
 
 class TwitchStreamNotifier():
 	def __init__(self, client, client_id=None):
 		self.client = client
+		self.streams = dict()
 		if client_id is None:
 			self.set_client_id()
 		else:
@@ -19,44 +21,79 @@ class TwitchStreamNotifier():
 		self.headers = dict()
 		self.headers.update({'Client-ID':self.client_id})
 		self.headers.update({'version':'Accept: application/vnd.twitchtv.v3+json'})
-		self.stream_filepath = path.join(sys.path[0] + '/stream_list')
-		self.create_stream_list(self.stream_filepath)
-		self.notified_channels = ["96378857971531776"]
+		self.streamdb_filepath = path.join(sys.path[0] + '/streams.db')
+		self.create_stream_database()
+		self.create_streams_dict()
 
 	def set_client_id(self):
 		config = configparser.ConfigParser()
-		config.read(sys.path[0] + "/config.ini")
+		config.read(path.join(sys.path[0] + "/config.ini"))
 		self.client_id = config['TWITCH']['client_id']
 
-	def create_stream_list(self, filepath):
-		"""Retrieves the list of streams to check from a config file"""
-		self.streams = {}
-		with open(filepath, 'r') as stream_file:
-			for line in stream_file:
-				self.streams.update({line.strip():False})
+	def create_stream_database(self):
+		"""Creates a stream database if it doesn't already exist"""
+		conn = sqlite3.connect(self.streamdb_filepath)
+		conn.execute("CREATE TABLE IF NOT EXISTS streams (cid text, stream text, PRIMARY KEY(cid, stream)) WITHOUT ROWID;")
+		conn.commit()
+		conn.close()
 
-	async def update_stream_list(self, filepath):
-		"""Retrieves the list of streams to check from a config file"""
-		copy_streams = copy.deepcopy(self.streams)
-		self.streams = {}
-		with open(filepath, 'r') as stream_file:
-			for line in stream_file:
-				self.streams.update({line.strip():False})
+	def create_streams_dict(self):
+		"""Creates a streams dictionary using the streams database, the previous dictionary will be deleted"""
+		self.streams = dict()
+		conn = sqlite3.connect(self.streamdb_filepath)
+		for row in conn.execute("SELECT * FROM streams ORDER BY cid"):
+			cid = row[0]
+			stream = row[1]
+			if cid in self.streams.keys():
+				self.streams[cid].update({stream:False})
+			else:
+				self.streams[cid] = {stream:False}
+		conn.close() 
 
-		for stream in self.streams:
-			if stream in copy_streams:
-				self.streams.update([(stream, copy_streams[stream])])
+	async def add_stream(self, cid, stream):
+		"""
+		Add a stream to the streams dictionary and the database. If an error has occurred
+		return an error message string, else return None
+		"""
+		if not isinstance(stream, str) or not isinstance(cid, str):
+			return None
+		if cid not in self.streams:
+			self.streams[cid] = {stream:False}
+		else:
+			if not stream in self.streams[cid]:
+				self.streams[cid].update({stream:False})
+		try:
+			row = (cid, stream)
+			conn = sqlite3.connect(self.streamdb_filepath)
+			conn.execute("INSERT INTO streams VALUES(?,?);", row)
+			conn.commit()
+			conn.close()
+			return "{} has been successfully added to the stream list".format(stream)
+		except sqlite3.IntegrityError:
+			return "Error: {} has already been added for this channel.".format(stream)
 
-	async def check_stream_online(self, stream_name):
-		url = self.TWITCH_API_BASE_URL + 'streams/' + stream_name
+		return None
+
+	async def does_stream_exist(self, stream):
+		"""Returns whether a channel exists. Any error will result in False."""
+		url = self.TWITCH_API_BASE_URL + 'channels/' + stream
 		async with aiohttp.get(url, headers=self.headers) as response:
-			assert response.status == 200
-			raw = await response.text()
-			raw = json.loads(raw)
-			if raw['stream'] is None: 
-				return False 
-			else: 
+			raw = await response.json()
+			if 'error' not in raw:
 				return True
+		return False
+
+	async def check_stream_online(self, stream):
+		"""Returns whether a stream is online or not. If the request fails return None instead"""
+		url = self.TWITCH_API_BASE_URL + 'streams/' + stream
+		async with aiohttp.get(url, headers=self.headers) as response:
+			if response.status == 200:
+				raw = await response.json()
+				if raw['stream'] is None: 
+					return False 
+				else: 
+					return True
+		return None
 
 	async def check_for_http_error(self, response):
 		"""Checks the status code of a Response for a HTTP error and prints the error
@@ -70,27 +107,19 @@ class TwitchStreamNotifier():
 			req_error = json.loads(response.text)
 			print ('HTTP Error ' + str(response.status_code) + ': ' + req_error['error'] + ', ' + req_error['message'])
 
-	async def notify_stream_online(self, stream):
+	async def notify_stream_online(self, cid, stream):
 		current_status = (await self.check_stream_online(stream))
-		if self.streams[stream] == False and current_status == True:
-			self.streams[stream] = True
-			for channel in self.notified_channels:
-				output = stream + ' is now online at http://www.twitch.tv/' + stream 
-				await self.client.send_message(discord.Object(channel), output)
+		if self.streams[cid][stream] == False and current_status == True:
+			self.streams[cid][stream] = True
+			output = stream + ' is now online at http://www.twitch.tv/' + stream 
+			await self.client.send_message(discord.Object(cid), output)
 		elif current_status == False:
-			self.streams[stream] = False
-
-	# async def update_stream_list_command(self, message):
-	# 	if message.content.startswith('!addstream ':
-	# 		channel = message.content[len('!addstream '):]
-	# 		url = self.TWITCH_API_BASE_URL + 'channels/' + channel
-	# 		async with aiohttp.get(url, headers=self.headers) as response:
-	# 			assert response.status == 200
-	# 			#add stream to stream list
+			self.streams[cid][stream] = False
 
 	async def run(self):
-		while True:
-			await self.update_stream_list(self.stream_filepath)
-			for stream in self.streams:
-				await self.notify_stream_online(stream)
+		await self.client.wait_until_ready()
+		while not self.client.is_closed:
+			for cid in self.streams:
+				for stream in self.streams[cid]:
+					await self.notify_stream_online(cid, stream)
 			await asyncio.sleep(60)

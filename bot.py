@@ -28,6 +28,7 @@ class Bot(discord.Client):
 	def set_commands(self):
 		self.commands = {
 			"!acceptinvite": self.accept_invite_command,
+			"!addstream": self.addstream_command,
 			"!baka": self.baka_command,
 			"!card": self.hearthstone_card_lookup_command,
 			"!channelinfo": self.channelinfo_command,
@@ -46,6 +47,16 @@ class Bot(discord.Client):
 		if self.ownerID == message.author.id:
 			if message.content.startswith("!acceptinvite "):
 				await self.accept_invite(message.content[14:])
+
+	async def addstream_command(self, message):
+		if message.content.startswith("!addstream "):
+			stream = message.content[len("!addstream "):]
+			if (await self.twitch_notifier.does_stream_exist(stream)):
+				error = await self.twitch_notifier.add_stream(message.channel.id, stream)
+				if error is not None:
+					await self.send_message(message.channel, error)
+			else:
+				await self.send_message(message.channel, "Channel does not exist")
 
 	async def baka_command(self, message):
 		filepath = path.join((sys.path[0] + '/res/baka.jpg'))
