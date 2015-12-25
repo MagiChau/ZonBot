@@ -7,9 +7,6 @@ import json
 from os import path
 import sys
 
-async def create_TwitchStreamNotifier(client, client_id):
-	ret
-
 class TwitchStreamNotifier():
 	def __init__(self, client, client_id=None):
 		self.client = client
