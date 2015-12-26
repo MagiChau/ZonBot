@@ -52,9 +52,9 @@ class Bot(discord.Client):
 		if message.content.startswith("!addstream "):
 			stream = message.content[len("!addstream "):]
 			if (await self.twitch_notifier.does_stream_exist(stream)):
-				error = await self.twitch_notifier.add_stream(message.channel.id, stream)
-				if error is not None:
-					await self.send_message(message.channel, error)
+				output = await self.twitch_notifier.add_stream(message.channel.id, stream)
+				if output is not None:
+					await self.send_message(message.channel, output)
 			else:
 				await self.send_message(message.channel, "Channel does not exist")
 
