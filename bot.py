@@ -8,6 +8,7 @@ import sys
 import time
 import discord
 from twitch_stream_notifier import TwitchStreamNotifier
+import invite_manager
 import hs_card_lookup
 
 class Bot(discord.Client):
@@ -16,6 +17,7 @@ class Bot(discord.Client):
 		self.set_config_vars()
 		self.set_commands()
 		self.twitch_notifier = TwitchStreamNotifier(self)
+		self.invite_manager = invite_manager.InviteManager(self)
 		self.start_time = None
 
 	def set_config_vars(self):
@@ -274,6 +276,7 @@ class Bot(discord.Client):
 				if command in self.commands:
 					await self.commands[command](message)
 				else:
+					await self.invite_manager.await_invite(message)
 					#search for delimited text
 					hearthstone_queries = await self.list_delimited_text(message, '[', ']')
 					output = ""
@@ -292,6 +295,7 @@ def main():
 	bot = Bot()
 	loop = asyncio.get_event_loop()
 	loop.create_task(bot.twitch_notifier.run())
+	loop.create_task(bot.invite_manager.run_alive_loop())
 	loop.run_until_complete(bot.run())
 	loop.close()
 
