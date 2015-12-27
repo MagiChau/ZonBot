@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import configparser
+import copy
 from os import path
 import random
 import re
@@ -19,6 +20,7 @@ class Bot(discord.Client):
 		self.twitch_notifier = TwitchStreamNotifier(self)
 		self.invite_manager = invite_manager.InviteManager(self)
 		self.start_time = None
+		self.hs_blacklist = ["81384788765712384"]
 
 	def set_config_vars(self):
 		config = configparser.ConfigParser()
@@ -38,12 +40,11 @@ class Bot(discord.Client):
 			"!eval": self.eval_command,
 			"!help": self.help_command,
 			"!info": self.info_command,
-			"!nobully": self.nobully_command,			
+			"!nobully": self.nobully_command,
+			"!prunebot": self.prunebot_command,
 			"!setgame": self.setgame_command,
 			"!uptime": self.uptime_command,
-			"!whois": self.whois_command,
-			"(╯°□°）╯︵ ┻━┻": self.unflip_command,
-			"┬─┬﻿ ノ( ゜-゜ノ)": self.flip_command}
+			"!whois": self.whois_command}
 
 	async def accept_invite_command(self, message):
 		if self.ownerID == message.author.id:
@@ -59,6 +60,11 @@ class Bot(discord.Client):
 					await self.send_message(message.channel, output)
 			else:
 				await self.send_message(message.channel, "Channel does not exist")
+
+	async def delstream_command(self, message):
+		if message.author.id == self.ownerID:
+			if message.content.startswith("!delstream "):
+				pass
 
 	async def baka_command(self, message):
 		filepath = path.join((sys.path[0] + '/res/baka.jpg'))
@@ -117,6 +123,7 @@ class Bot(discord.Client):
 		card_text = ""
 		flavor_text = ""
 		player_class = ""
+		output = ''
 
 		async def remove_tags(text):
 			new_text = text
@@ -196,6 +203,25 @@ class Bot(discord.Client):
 
 		await self.send_message(message.channel, help_message)
 
+	async def prunebot_command(self, message):
+		cmd_msg = message.content
+		if cmd_msg.startswith("!prunebot "):
+			arg = cmd_msg[len("!prunebot "):]
+			messages_copy = copy.deepcopy(self.messages)
+			if arg == 'all':
+				for msg in messages_copy:
+					if msg.author.id == self.user.id:
+						await self.delete_message(msg)
+			elif int(arg) > 0:
+				count = 0
+				for msg in reversed(messages_copy):
+					if count == int(arg):
+						break
+					elif msg.author.id == self.user.id:
+						count += 1
+						await self.delete_message(msg)
+
+
 	async def unflip_command(self, message):
 		await self.send_message(message.channel, "┬─┬﻿ ノ( ゜-゜ノ)")
 
@@ -237,12 +263,12 @@ class Bot(discord.Client):
 			match = re.fullmatch(r'<@[0-9]+>', user)
 			if match:
 				user = match.string[2:-1]
-				found_user = utils.get(message.server.members, id = user)
+				found_user = discord.utils.get(message.server.members, id = user)
 			else:
 				if re.fullmatch(r'[0-9]+', user):
-					found_user = utils.get(message.server.members, id = user)
+					found_user = discord.utils.get(message.server.members, id = user)
 				else:
-					found_user = utils.get(message.server.members, name = user)
+					found_user = discord.utils.get(message.server.members, name = user)
 
 			if found_user:
 				output = "```Name: {}\nID: {}\nJoined Server On: {}/{}/{}```".format(found_user.name, found_user.id, \
@@ -276,17 +302,21 @@ class Bot(discord.Client):
 				if command in self.commands:
 					await self.commands[command](message)
 				else:
+					if message.server is not None:
+						if message.server.id in self.hs_blacklist:
+							return
 					await self.invite_manager.await_invite(message)
 					#search for delimited text
-					hearthstone_queries = await self.list_delimited_text(message, '[', ']')
-					output = ""
-					for query in hearthstone_queries:
-						results = hs_card_lookup.find_matches(query, 0.5)
-						if len(results) > 0:
-							results.sort(key=lambda x: x[1], reverse = True)
-							output  = output + (await self.format_hearthstone_card(results[0][0])) +'\n\n'
-					if output != "":
-						await self.send_message(message.channel, output[:-2])
+					if message.content.find('`') == -1:
+						hearthstone_queries = await self.list_delimited_text(message, '[', ']')
+						output = ""
+						for query in hearthstone_queries:
+							results = hs_card_lookup.find_matches(query, 0.5)
+							if len(results) > 0:
+								results.sort(key=lambda x: x[1], reverse = True)
+								output  = output + (await self.format_hearthstone_card(results[0][0])) +'\n\n'
+						if output != "":
+							await self.send_message(message.channel, output[:-2])
 
 	def run(self):
 		yield from self.start(self.email, self.password)
@@ -295,7 +325,7 @@ def main():
 	bot = Bot()
 	loop = asyncio.get_event_loop()
 	loop.create_task(bot.twitch_notifier.run())
-	loop.create_task(bot.invite_manager.run_alive_loop())
+	#loop.create_task(bot.invite_manager.run_alive_loop())
 	loop.run_until_complete(bot.run())
 	loop.close()
 

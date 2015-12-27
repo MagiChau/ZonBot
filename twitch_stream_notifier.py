@@ -119,7 +119,8 @@ class TwitchStreamNotifier():
 	async def run(self):
 		await self.client.wait_until_ready()
 		while not self.client.is_closed:
-			for cid in self.streams:
-				for stream in self.streams[cid]:
+			streams_copy = copy.deepcopy(self.streams)
+			for cid in streams_copy:
+				for stream in streams_copy[cid]:
 					await self.notify_stream_online(cid, stream)
 			await asyncio.sleep(60)

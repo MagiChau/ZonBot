@@ -46,8 +46,8 @@ class InviteManager():
 	async def run_alive_loop(self):
 		await self.client.wait_until_ready()
 		while not self.client.is_closed:
-			await self.post_alive()
 			await asyncio.sleep(800)
+			await self.post_alive()
 		
 
 
