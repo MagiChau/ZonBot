@@ -77,23 +77,29 @@ class TwitchStreamNotifier():
 	async def does_stream_exist(self, stream):
 		"""Returns whether a channel exists. Any error will result in False."""
 		url = self.TWITCH_API_BASE_URL + 'channels/' + stream
-		async with aiohttp.get(url, headers=self.headers) as response:
+		try:
+			response = await aiohttp.get(url, headers=self.headers)
 			raw = await response.json()
 			if 'error' not in raw:
 				return True
+		except aiohttp.errors.ClientOSError:
+			pass
+
 		return False
 
 	async def check_stream_online(self, stream):
 		"""Returns whether a stream is online or not. If the request fails return None instead"""
 		url = self.TWITCH_API_BASE_URL + 'streams/' + stream
-		async with aiohttp.get(url, headers=self.headers) as response:
+		try:
+			response = await aiohttp.get(url, headers=self.headers)
 			if response.status == 200:
 				raw = await response.json()
 				if raw['stream'] is None: 
 					return False 
 				else: 
 					return True
-		return None
+		except aiohttp.errors.ClientOSError:
+			return None
 
 	async def check_for_http_error(self, response):
 		"""Checks the status code of a Response for a HTTP error and prints the error
@@ -115,11 +121,13 @@ class TwitchStreamNotifier():
 			await self.client.send_message(discord.Object(cid), output)
 		elif current_status == False:
 			self.streams[cid][stream] = False
+		elif current_status is None:
+			print("Error connecting to the Twitch API")
 
 	async def run(self):
 		await self.client.wait_until_ready()
 		while not self.client.is_closed:
-			streams_copy = copy.deepcopy(self.streams)
+			streams_copy = copy.deepcopy(self.streams) #prevents collision on streams dictionary
 			for cid in streams_copy:
 				for stream in streams_copy[cid]:
 					await self.notify_stream_online(cid, stream)
