@@ -214,7 +214,7 @@ class Bot(discord.Client):
 		elif message.content == "!help nobully":
 			help_message = 'Usage: !nobully\nSummons the anti-bully ranger.'
 		elif message.content == "!help prunebot":
-			help_message = 'Usage: !prunebot <number>\nDeletes <number> amount of messages on the bot. Only usable by the owner.'
+			help_message = 'Usage: !prunebot <number>\nDeletes <number> amount of messages on the bot.'
 		elif message.content == "!help setgame":
 			help_message = "Usage: !setgame <name>\nSets the bot's status to Playing <name>. Only usable by the owner."
 		elif message.content == "!help uptime":
@@ -333,10 +333,12 @@ class Bot(discord.Client):
 						hearthstone_queries = await self.list_delimited_text(message, '[', ']')
 						output = ""
 						for query in hearthstone_queries:
+							if output != "":
+								output += "\n\n"
 							results = hs_card_lookup.find_matches(query, 0.5)
 							if len(results) > 0:
 								results.sort(key=lambda x: x[1], reverse = True)
-								output  = output + (await self.format_hearthstone_card(results[0][0])) +'\n\n'
+								output  = output + (await self.format_hearthstone_card(results[0][0]))
 						if output != "":
 							await self.send_message(message.channel, output[:-2])
 

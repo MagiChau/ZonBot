@@ -17,7 +17,8 @@ def remove_non_collectible_cards(cards):
 	for exp in cards:
 		list_copy = list(cards[exp])
 		for card in list_copy:
-			if 'type' not in card.keys() or card['type'] == 'Hero':
+			if 'type' not in card.keys() or card['type'] == 'Hero' or card['type'] == 'Enchantment'\
+			or card['type'] == 'Hero Power':
 				cards[exp].remove(card)
 			else: 
 				card.update(expansion = exp)
