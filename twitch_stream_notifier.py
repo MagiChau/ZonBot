@@ -80,6 +80,7 @@ class TwitchStreamNotifier():
 		try:
 			response = await aiohttp.get(url, headers=self.headers)
 			raw = await response.json()
+			response.close()
 			if 'error' not in raw:
 				return True
 		except aiohttp.errors.ClientOSError:
@@ -94,10 +95,12 @@ class TwitchStreamNotifier():
 			response = await aiohttp.get(url, headers=self.headers)
 			if response.status == 200:
 				raw = await response.json()
+				response.close()
 				if raw['stream'] is None: 
 					return False 
 				else: 
 					return True
+			response.close()
 		except aiohttp.errors.ClientOSError:
 			return None
 
