@@ -180,6 +180,7 @@ class Bot(discord.Client):
 		await self.send_message(message.channel, text)
 
 	async def help_command(self, message):
+		help_message = None
 		if message.content == "!help":
 			help_message_base = "Commands: "
 			help_message = ""
@@ -194,14 +195,35 @@ class Bot(discord.Client):
 
 		elif message.content == "!help acceptinvite":
 			help_message = "Usage: !acceptinvite <URL>\nMakes the bot join the specified Discord server. Only owner can use this command."
-		elif message.content =="!help card":
+		elif message.content == '!help addstream':
+			help_message = "Usage: !addstream <channel name>\nAdds a Twitch stream to the notification list for the channel the command is used in.\nExample:!addstream arteezy "
+		elif message.content == '!help baka':
+			help_message = "Usage: !baka\nPosts a picture of a baka in the channel."
+		elif message.content == "!help card":
 			help_message = 'Usage: !card <query>\nLooks up a Hearthstone card by name and returns the best matching card. Can also be used by typing a query within square brackets. E.g. [Ragnaros]'
-		elif message.content =="!help cuck":
+		elif message.content == '!help channelinfo':
+			help_message = "Usage: !channelinfo\nDisplays information about the channel the command is used in."
+		elif message.content == "!help cuck":
 			help_message = 'Usage: !cuck <name>\nRandomly decides if a person is a cuck. If they are not, then the user of the command is a cuck.'
+		elif message.content == "!help eval":
+			help_message = 'Usage: !eval <code>\nEvaluates a line of code. Only the owner can use this command.'
+		elif message.content == "!help help":
+			help_message = 'Usage: !help\nDisplays commands available on the bot.'
 		elif message.content == "!help info":
 			help_message = 'Usage: !info\nDisplays information about the bot.'
+		elif message.content == "!help nobully":
+			help_message = 'Usage: !nobully\nSummons the anti-bully ranger.'
+		elif message.content == "!help prunebot":
+			help_message = 'Usage: !prunebot <number>\nDeletes <number> amount of messages on the bot. Only usable by the owner.'
+		elif message.content == "!help setgame":
+			help_message = "Usage: !setgame <name>\nSets the bot's status to Playing <name>. Only usable by the owner."
+		elif message.content == "!help uptime":
+			help_message = "Usage: !helptime\nDisplays the length of time the bot has been up."
+		elif message.content == "!help whois":
+			help_message = "Usage: !whois <User>\nDisplays information about a user. Can accept an exact username, a mention, or a user ID number."
 
-		await self.send_message(message.channel, help_message)
+		if help_message is not None:
+			await self.send_message(message.channel, help_message)
 
 	async def prunebot_command(self, message):
 		cmd_msg = message.content
