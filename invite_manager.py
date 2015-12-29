@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import configparser
+import discord
 from os import path
 import re
 import sys

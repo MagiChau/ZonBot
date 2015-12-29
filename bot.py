@@ -42,6 +42,7 @@ class Bot(discord.Client):
 			"!info": self.info_command,
 			"!nobully": self.nobully_command,
 			"!prunebot": self.prunebot_command,
+			"!removestream": self.removestream_command,
 			"!setgame": self.setgame_command,
 			"!uptime": self.uptime_command,
 			"!whois": self.whois_command}
@@ -60,6 +61,15 @@ class Bot(discord.Client):
 					await self.send_message(message.channel, output)
 			else:
 				await self.send_message(message.channel, "Channel does not exist")
+
+	async def removestream_command(self, message):
+		if self.ownerID == message.author.id or (message.server is not None and \
+			message.server.owner.id == message.author.id):
+			if message.content.startswith("!removestream "):
+				stream = message.content[len("!removestream "):]
+				output = await self.twitch_notifier.remove_stream(message.channel.id, stream)
+				if output is not None:
+					await self.send_message(message.channel, output)
 
 	async def delstream_command(self, message):
 		if message.author.id == self.ownerID:
@@ -215,6 +225,9 @@ class Bot(discord.Client):
 			help_message = 'Usage: !nobully\nSummons the anti-bully ranger.'
 		elif message.content == "!help prunebot":
 			help_message = 'Usage: !prunebot <number>\nDeletes <number> amount of messages on the bot.'
+		elif message.content == "!help removestream":
+			help_message = 'Usage: !removestream <channel name>\nRemoves a Twitch stream from the notification list for the channel the command is used in.\
+				Only usable by server owner.\nExample: !removestream arteezy'
 		elif message.content == "!help setgame":
 			help_message = "Usage: !setgame <name>\nSets the bot's status to Playing <name>. Only usable by the owner."
 		elif message.content == "!help uptime":
@@ -241,7 +254,10 @@ class Bot(discord.Client):
 						break
 					elif msg.author.id == self.user.id:
 						count += 1
-						await self.delete_message(msg)
+						try:
+							await self.delete_message(msg)
+						except discord.errors.Forbidden:
+							await self.send_message(message.channel, "Error deleting messages.")
 
 
 	async def unflip_command(self, message):

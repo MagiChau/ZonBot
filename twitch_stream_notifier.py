@@ -74,6 +74,29 @@ class TwitchStreamNotifier():
 
 		return None
 
+	async def remove_stream(self, cid, stream):
+		"""
+		Remove a stream from the streams dictionary and the database. If an error has occurred
+		return an error message string, else return None
+		"""
+		if not isinstance(stream, str) or not isinstance(cid, str):
+			return None
+		if cid not in self.streams:
+			return "Error: there are no streams for this channel."
+		if stream not in self.streams[cid]:
+			return "Error: {} is not in the stream list for this channel.".format(stream)
+		elif stream in self.streams[cid]:
+			del self.streams[cid][stream]
+			try:
+				row = (cid, stream)
+				conn = sqlite3.connect(self.streamdb_filepath)
+				conn.execute("DELETE FROM streams WHERE cid = ? AND stream = ?;", row)
+				conn.commit()
+				conn.close()
+				return "{} has been successfully removed from the stream list".format(stream)
+			except:
+				return "Error removing {} from the streams database".format(stream)
+
 	async def does_stream_exist(self, stream):
 		"""Returns whether a channel exists. Any error will result in False."""
 		url = self.TWITCH_API_BASE_URL + 'channels/' + stream
@@ -117,19 +140,20 @@ class TwitchStreamNotifier():
 			print ('HTTP Error ' + str(response.status_code) + ': ' + req_error['error'] + ', ' + req_error['message'])
 
 	async def notify_stream_online(self, cid, stream):
-		current_status = (await self.check_stream_online(stream))
-		if self.streams[cid][stream] == False and current_status == True:
-			self.streams[cid][stream] = True
-			output = stream + ' is now online at http://www.twitch.tv/' + stream
-			try:
-				await self.client.send_message(discord.Object(cid), output)
-			except discord.errors.Forbidden:
-				print("Unable to send message in specified channel")
+		if cid in self.streams and stream in self.streams[cid]: #prevents error on checking a deleted stream
+			current_status = (await self.check_stream_online(stream))
+			if self.streams[cid][stream] == False and current_status == True:
+				self.streams[cid][stream] = True
+				output = stream + ' is now online at http://www.twitch.tv/' + stream
+				try:
+					await self.client.send_message(discord.Object(cid), output)
+				except discord.errors.Forbidden:
+					print("Unable to send message in specified channel")
 
-		elif current_status == False:
-			self.streams[cid][stream] = False
-		elif current_status is None:
-			print("Error connecting to the Twitch API")
+			elif current_status == False:
+				self.streams[cid][stream] = False
+			elif current_status is None:
+				print("Error connecting to the Twitch API")
 
 	async def run(self):
 		await self.client.wait_until_ready()
