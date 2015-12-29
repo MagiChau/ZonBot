@@ -120,8 +120,12 @@ class TwitchStreamNotifier():
 		current_status = (await self.check_stream_online(stream))
 		if self.streams[cid][stream] == False and current_status == True:
 			self.streams[cid][stream] = True
-			output = stream + ' is now online at http://www.twitch.tv/' + stream 
-			await self.client.send_message(discord.Object(cid), output)
+			output = stream + ' is now online at http://www.twitch.tv/' + stream
+			try:
+				await self.client.send_message(discord.Object(cid), output)
+			except discord.errors.Forbidden:
+				print("Unable to send message in specified channel")
+
 		elif current_status == False:
 			self.streams[cid][stream] = False
 		elif current_status is None:
