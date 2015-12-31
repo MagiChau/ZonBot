@@ -141,7 +141,22 @@ class TwitchStreamNotifier():
 				else: 
 					return True
 			response.close()
-		except aiohttp.errors.ClientOSError:
+		except aiohttp.errors.ClientOSError as e:
+			print(e)
+			return None
+
+	async def get_stream(self, stream):
+		"""Returns a stream dictionary of a Twitch stream. Returns None if request fails."""
+		url = self.TWITCH_API_BASE_URL + 'streams/' + stream
+		try:
+			response = await aiohttp.get(url, headers=self.headers)
+			if response.status == 200:
+				raw = await response.json()
+				response.close()
+				return raw
+			response.close()
+		except aiohttp.errors.ClientOSError as e:
+			print(e)
 			return None
 
 	async def check_for_http_error(self, response):
@@ -158,19 +173,20 @@ class TwitchStreamNotifier():
 
 	async def notify_stream_online(self, cid, stream):
 		if cid in self.streams and stream in self.streams[cid]: #prevents error on checking a deleted stream
-			current_status = (await self.check_stream_online(stream))
-			if self.streams[cid][stream] == False and current_status == True:
+			stream_dict = await self.get_stream(stream)
+			
+			if stream_dict is None:
+				print("Error connecting to the Twitch API. Channel:{} Stream: {}".format(cid, stream))
+			elif stream_dict['stream'] is None:
+				self.streams[cid][stream] = False
+			elif self.streams[cid][stream] == False and stream_dict['stream'] is not None:
 				self.streams[cid][stream] = True
-				output = stream + ' is now online at http://www.twitch.tv/' + stream
+				output = "{} is now playing {}: {}, at {}".format(stream_dict['stream']['channel']['display_name'], 
+					stream_dict['stream']['game'], stream_dict['stream']['channel']['status'],stream_dict['stream']['channel']['url'])
 				try:
 					await self.client.send_message(discord.Object(cid), output)
 				except discord.errors.Forbidden:
 					print("Unable to send message in specified channel")
-
-			elif current_status == False:
-				self.streams[cid][stream] = False
-			elif current_status is None:
-				print("Error connecting to the Twitch API")
 
 	async def run(self):
 		await self.client.wait_until_ready()
