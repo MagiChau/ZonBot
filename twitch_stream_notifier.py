@@ -48,7 +48,24 @@ class TwitchStreamNotifier():
 				self.streams[cid].update({stream:False})
 			else:
 				self.streams[cid] = {stream:False}
-		conn.close() 
+		conn.close()
+
+	async def clean_streams_database(self):
+		"""Removes all streams from the database if the bot cannot see the Discord channel it belongs to"""
+		channels = list()
+		streams_copy = copy.deepcopy(self.streams)
+		conn = sqlite3.connect(self.streamdb_filepath)
+		for server in self.client.servers:
+			channels.extend(list(map(lambda x: x.id, server.channels)))
+		for cid in streams_copy:
+			if cid not in channels:
+				del self.streams[cid]
+				try:
+					conn.execute("DELETE FROM streams WHERE cid = ?", (cid,))
+					conn.commit()
+				except:
+					print("Error deleting Channel {} from the database.".format(cid))
+		conn.close()
 
 	async def add_stream(self, cid, stream):
 		"""
@@ -157,6 +174,7 @@ class TwitchStreamNotifier():
 
 	async def run(self):
 		await self.client.wait_until_ready()
+		await self.clean_streams_database()
 		while not self.client.is_closed:
 			streams_copy = copy.deepcopy(self.streams) #prevents collision on streams dictionary
 			for cid in streams_copy:
