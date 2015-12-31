@@ -181,7 +181,7 @@ class TwitchStreamNotifier():
 				self.streams[cid][stream] = False
 			elif self.streams[cid][stream] == False and stream_dict['stream'] is not None:
 				self.streams[cid][stream] = True
-				output = "{} is now playing {}: {}, at {}".format(stream_dict['stream']['channel']['display_name'], 
+				output = "{} is now playing {}: {} at {}".format(stream_dict['stream']['channel']['display_name'], 
 					stream_dict['stream']['game'], stream_dict['stream']['channel']['status'],stream_dict['stream']['channel']['url'])
 				try:
 					await self.client.send_message(discord.Object(cid), output)
