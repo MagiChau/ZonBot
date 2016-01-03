@@ -21,6 +21,7 @@ class Bot(discord.Client):
 		self.invite_manager = invite_manager.InviteManager(self)
 		self.start_time = None
 		self.hs_blacklist = ["81384788765712384"]
+		self.server_blacklist = ["81384788765712384"]
 
 	def set_config_vars(self):
 		config = configparser.ConfigParser()
@@ -44,6 +45,7 @@ class Bot(discord.Client):
 			"!prunebot": self.prunebot_command,
 			"!removestream": self.removestream_command,
 			"!setgame": self.setgame_command,
+			"!streamlist": self.streamlist_command,
 			"!uptime": self.uptime_command,
 			"!whois": self.whois_command}
 
@@ -230,6 +232,8 @@ class Bot(discord.Client):
 				Only usable by server owner.\nExample: !removestream arteezy'
 		elif message.content == "!help setgame":
 			help_message = "Usage: !setgame <name>\nSets the bot's status to Playing <name>. Only usable by the owner."
+		elif message.content == "!help streamlist":
+			help_message = "Usage: !streamlist\nDisplays all streams on the notifier list for the channel the command is used in."
 		elif message.content == "!help uptime":
 			help_message = "Usage: !helptime\nDisplays the length of time the bot has been up."
 		elif message.content == "!help whois":
@@ -259,17 +263,15 @@ class Bot(discord.Client):
 						except discord.errors.Forbidden:
 							await self.send_message(message.channel, "Error deleting messages.")
 
-
-	async def unflip_command(self, message):
-		await self.send_message(message.channel, "┬─┬﻿ ノ( ゜-゜ノ)")
-
-	async def flip_command(self, message):
-		await self.send_message(message.channel, "(╯°□°）╯︵ ┻━┻")
-
 	async def setgame_command(self, message):
 		if message.author.id == self.ownerID and message.content.startswith("!setgame "):
 			game_name = message.content[len("!setgame "):]
 			await self.change_status(discord.Game(name=game_name))
+
+	async def streamlist_command(self, message):
+		if message.content.startswith("!streamlist"):
+			output = await self.twitch_notifier.list_stream(message.channel.id)
+			await self.send_message(message.channel, output)
 
 	async def uptime_command(self, message):
 		seconds = int(time.time() - self.start_time)
@@ -331,6 +333,8 @@ class Bot(discord.Client):
 		print("Bot is connected")
 
 	async def on_message(self, message):
+		if message.server is not None and message.server.id in self.server_blacklist:
+			return
 		if message.author != self.user:
 			command = message.content
 			if command in self.commands:

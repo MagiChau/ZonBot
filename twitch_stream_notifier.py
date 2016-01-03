@@ -4,6 +4,7 @@ import configparser
 import copy
 import discord
 import json
+import memory_profiler
 from os import path
 import sqlite3
 import sys
@@ -142,7 +143,6 @@ class TwitchStreamNotifier():
 					return True
 			response.close()
 		except aiohttp.errors.ClientOSError as e:
-			print(e)
 			return None
 
 	async def get_stream(self, stream):
@@ -152,24 +152,21 @@ class TwitchStreamNotifier():
 			response = await aiohttp.get(url, headers=self.headers)
 			if response.status == 200:
 				raw = await response.json()
-				response.close()
 				return raw
+				response.close()
 			response.close()
 		except aiohttp.errors.ClientOSError as e:
-			print(e)
 			return None
 
-	async def check_for_http_error(self, response):
-		"""Checks the status code of a Response for a HTTP error and prints the error
+	async def list_stream(self, channelID):
+		sep = ','
+		if channelID not in self.streams or not self.streams[channelID]:
+			return "No streams found."
+		output = '```'
+		for stream in self.streams[channelID]:
+			output += stream + sep + ' '
+		return output[:-(len(sep) + 1)] + '```'
 
-		Args:
-			response (Response): Twitch API Response obj
-		"""
-		try:
-			response.raise_for_status()
-		except requests.exceptions.HTTPError:
-			req_error = json.loads(response.text)
-			print ('HTTP Error ' + str(response.status_code) + ': ' + req_error['error'] + ', ' + req_error['message'])
 
 	async def notify_stream_online(self, cid, stream):
 		if cid in self.streams and stream in self.streams[cid]: #prevents error on checking a deleted stream
