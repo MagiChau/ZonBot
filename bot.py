@@ -66,7 +66,7 @@ class Bot(discord.Client):
 
 	async def removestream_command(self, message):
 		if self.ownerID == message.author.id or (message.server is not None and \
-			message.server.owner.id == message.author.id):
+			message.server.owner.id == message.author.id) or message.channel.is_private:
 			if message.content.startswith("!removestream "):
 				stream = message.content[len("!removestream "):]
 				output = await self.twitch_notifier.remove_stream(message.channel.id, stream)
