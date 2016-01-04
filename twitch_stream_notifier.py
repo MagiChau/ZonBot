@@ -189,8 +189,8 @@ class TwitchStreamNotifier():
 		await self.client.wait_until_ready()
 		await self.clean_streams_database()
 		while not self.client.is_closed:
+			await asyncio.sleep(60)
 			streams_copy = copy.deepcopy(self.streams) #prevents collision on streams dictionary
 			for cid in streams_copy:
 				for stream in streams_copy[cid]:
 					await self.notify_stream_online(cid, stream)
-			await asyncio.sleep(60)
