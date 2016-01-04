@@ -73,11 +73,6 @@ class Bot(discord.Client):
 				if output is not None:
 					await self.send_message(message.channel, output)
 
-	async def delstream_command(self, message):
-		if message.author.id == self.ownerID:
-			if message.content.startswith("!delstream "):
-				pass
-
 	async def baka_command(self, message):
 		filepath = path.join((sys.path[0] + '/res/baka.jpg'))
 		with open(filepath, 'rb') as picture:
@@ -116,7 +111,6 @@ class Bot(discord.Client):
 					code = e
 				output = '```python\n' + str(code) + '```'
 				await self.send_message(message.channel, output)
-
 	
 	async def hearthstone_card_lookup_command(self, message):
 		if message.content.startswith("!card "):
@@ -315,7 +309,6 @@ class Bot(discord.Client):
 					found_user.joined_at.month, found_user.joined_at.day, found_user.joined_at.year)
 				await self.send_message(message.channel, output)
 
-
 	async def list_delimited_text(self, message, delimiter1, delimiter2):
 		result_list = []
 		search_text = message.content
@@ -370,7 +363,19 @@ def main():
 	loop = asyncio.get_event_loop()
 	loop.create_task(bot.twitch_notifier.run())
 	#loop.create_task(bot.invite_manager.run_alive_loop())
-	loop.run_until_complete(bot.run())
-	loop.close()
+	try:
+		loop.run_until_complete(bot.run())
+	except KeyboardInterrupt:
+		loop.run_until_complete(bot.logout())
+		pending = asyncio.Task.all_tasks()
+		gathered = asyncio.gather(*pending)
+		try:
+			gathered.cancel()
+			loop.run_forever()
+			gathered.exceptions()
+		except:
+			pass
+	finally:
+		loop.close()
 
 if __name__ == "__main__": main()
