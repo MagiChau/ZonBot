@@ -156,18 +156,12 @@ class TwitchStreamNotifier():
 	async def get_stream(self, stream):
 		"""Returns a stream dictionary of a Twitch stream. Returns None if request fails."""
 		url = self.TWITCH_API_BASE_URL + 'streams/' + stream
-		response = None
-		try:
-			response = await aiohttp.get(url, headers=self.headers)
+		await with aiohttp.get(url, headers=self.headers) as response:
+			raw = await response.json()
 			if response.status == 200:
-				raw = await response.json()
 				return raw
-		except aiohttp.errors.ClientOSError as e:
-			return None
-		finally:
-			if response is not None:
-				await response.release()
-
+			else:
+				return None
 
 	async def list_stream(self, channelID):
 		sep = ','
@@ -181,7 +175,10 @@ class TwitchStreamNotifier():
 
 	async def notify_stream_online(self, cid, stream):
 		if cid in self.streams and stream in self.streams[cid]: #prevents error on checking a deleted stream
-			stream_dict = await self.get_stream(stream)
+			try:
+				stream_dict = await self.get_stream(stream)
+			except Exception as e:
+				print(e)
 			
 			if stream_dict is None:
 				print("Error connecting to the Twitch API. Channel:{} Stream: {}".format(cid, stream))
