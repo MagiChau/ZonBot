@@ -240,14 +240,14 @@ class Bot(discord.Client):
 		cmd_msg = message.content
 		if cmd_msg.startswith("!prunebot "):
 			arg = cmd_msg[len("!prunebot "):]
-			messages_copy = copy.deepcopy(self.messages)
+			log = msg in self.logs_from(message.channel)
 			if arg == 'all':
-				for msg in messages_copy:
+				for msg in log:
 					if msg.author.id == self.user.id:
 						await self.delete_message(msg)
 			elif int(arg) > 0:
 				count = 0
-				for msg in reversed(messages_copy):
+				for msg in log:
 					if count == int(arg):
 						break
 					elif msg.author.id == self.user.id:
