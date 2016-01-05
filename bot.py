@@ -326,34 +326,38 @@ class Bot(discord.Client):
 		print("Bot is connected")
 
 	async def on_message(self, message):
-		if message.server is not None and message.server.id in self.server_blacklist:
-			return
-		if message.author != self.user:
-			command = message.content
-			if command in self.commands:
-				await self.commands[command](message)
-			else:
-				command = message.content.split(' ')[0]
+		try:
+			if message.server is not None and message.server.id in self.server_blacklist:
+				return
+			if message.author != self.user:
+				command = message.content
 				if command in self.commands:
 					await self.commands[command](message)
 				else:
-					if message.server is not None:
-						if message.server.id in self.hs_blacklist:
-							return
-					await self.invite_manager.await_invite(message)
-					#search for delimited text
-					if message.content.find('`') == -1:
-						hearthstone_queries = await self.list_delimited_text(message, '[', ']')
-						output = ""
-						for query in hearthstone_queries:
+					command = message.content.split(' ')[0]
+					if command in self.commands:
+						await self.commands[command](message)
+					else:
+						if message.server is not None:
+							if message.server.id in self.hs_blacklist:
+								return
+						await self.invite_manager.await_invite(message)
+						#search for delimited text
+						if message.content.find('`') == -1:
+							hearthstone_queries = await self.list_delimited_text(message, '[', ']')
+							output = ""
+							for query in hearthstone_queries:
+								if output != "":
+									output += "\n\n"
+								results = hs_card_lookup.find_matches(query, 0.5)
+								if len(results) > 0:
+									results.sort(key=lambda x: x[1], reverse = True)
+									output  = output + (await self.format_hearthstone_card(results[0][0]))
 							if output != "":
-								output += "\n\n"
-							results = hs_card_lookup.find_matches(query, 0.5)
-							if len(results) > 0:
-								results.sort(key=lambda x: x[1], reverse = True)
-								output  = output + (await self.format_hearthstone_card(results[0][0]))
-						if output != "":
-							await self.send_message(message.channel, output[:-2])
+								await self.send_message(message.channel, output[:-2])
+		except as e:
+			print(message.content)
+			print(e)
 
 	def run(self):
 		yield from self.start(self.email, self.password)
