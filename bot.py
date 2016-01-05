@@ -355,7 +355,7 @@ class Bot(discord.Client):
 									output  = output + (await self.format_hearthstone_card(results[0][0]))
 							if output != "":
 								await self.send_message(message.channel, output[:-2])
-		except as e:
+		except Exception as e:
 			print(message.content)
 			print(e)
 
