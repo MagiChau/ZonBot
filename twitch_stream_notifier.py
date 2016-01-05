@@ -182,8 +182,11 @@ class TwitchStreamNotifier():
 					stream_dict['stream']['game'], stream_dict['stream']['channel']['status'],stream_dict['stream']['channel']['url'])
 				try:
 					await self.client.send_message(discord.Object(cid), output)
-				except discord.errors.Forbidden:
+				except discord.errors.Forbidden, discord.errors.NotFound as e:
 					print("Unable to send message in specified channel")
+					if isinstance(e, discord.errors.NotFound):
+						for stream in self.streams[cid]:
+							self.remove_stream(cid, stream)
 
 	async def run(self):
 		await self.client.wait_until_ready()
