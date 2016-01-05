@@ -154,6 +154,8 @@ class Bot(discord.Client):
 
 		if 'text' in card:
 			card_text = await remove_tags(card['text'])
+			card_text = card_text.replace('\n', ' ')
+
 		if 'flavor' in card:
 			flavor_text = await remove_tags(card['flavor'])
 			if card_text != "":
