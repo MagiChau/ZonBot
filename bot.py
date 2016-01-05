@@ -57,12 +57,9 @@ class Bot(discord.Client):
 	async def addstream_command(self, message):
 		if message.content.startswith("!addstream "):
 			stream = message.content[len("!addstream "):]
-			if (await self.twitch_notifier.does_stream_exist(stream)):
-				output = await self.twitch_notifier.add_stream(message.channel.id, stream)
-				if output is not None:
-					await self.send_message(message.channel, output)
-			else:
-				await self.send_message(message.channel, "Channel does not exist")
+			output = await self.twitch_notifier.add_stream(message.channel.id, stream)
+			if output is not None:
+				await self.send_message(message.channel, output)
 
 	async def removestream_command(self, message):
 		if self.ownerID == message.author.id or (message.server is not None and \
@@ -240,14 +237,14 @@ class Bot(discord.Client):
 		cmd_msg = message.content
 		if cmd_msg.startswith("!prunebot "):
 			arg = cmd_msg[len("!prunebot "):]
-			messages_copy = copy.deepcopy(self.messages)
+			log = await self.logs_from(message.channel, limit=500)
 			if arg == 'all':
-				for msg in messages_copy:
+				for msg in log:
 					if msg.author.id == self.user.id:
 						await self.delete_message(msg)
 			elif int(arg) > 0:
 				count = 0
-				for msg in reversed(messages_copy):
+				for msg in log:
 					if count == int(arg):
 						break
 					elif msg.author.id == self.user.id:
@@ -326,34 +323,38 @@ class Bot(discord.Client):
 		print("Bot is connected")
 
 	async def on_message(self, message):
-		if message.server is not None and message.server.id in self.server_blacklist:
-			return
-		if message.author != self.user:
-			command = message.content
-			if command in self.commands:
-				await self.commands[command](message)
-			else:
-				command = message.content.split(' ')[0]
+		try:
+			if message.server is not None and message.server.id in self.server_blacklist:
+				return
+			if message.author != self.user:
+				command = message.content
 				if command in self.commands:
 					await self.commands[command](message)
 				else:
-					if message.server is not None:
-						if message.server.id in self.hs_blacklist:
-							return
-					await self.invite_manager.await_invite(message)
-					#search for delimited text
-					if message.content.find('`') == -1:
-						hearthstone_queries = await self.list_delimited_text(message, '[', ']')
-						output = ""
-						for query in hearthstone_queries:
+					command = message.content.split(' ')[0]
+					if command in self.commands:
+						await self.commands[command](message)
+					else:
+						if message.server is not None:
+							if message.server.id in self.hs_blacklist:
+								return
+						await self.invite_manager.await_invite(message)
+						#search for delimited text
+						if message.content.find('`') == -1:
+							hearthstone_queries = await self.list_delimited_text(message, '[', ']')
+							output = ""
+							for query in hearthstone_queries:
+								if output != "":
+									output += "\n"
+								results = hs_card_lookup.find_matches(query, 0.5)
+								if len(results) > 0:
+									results.sort(key=lambda x: x[1], reverse = True)
+									output  = output + (await self.format_hearthstone_card(results[0][0]))
 							if output != "":
-								output += "\n\n"
-							results = hs_card_lookup.find_matches(query, 0.5)
-							if len(results) > 0:
-								results.sort(key=lambda x: x[1], reverse = True)
-								output  = output + (await self.format_hearthstone_card(results[0][0]))
-						if output != "":
-							await self.send_message(message.channel, output[:-2])
+								await self.send_message(message.channel, output[:-1])
+		except Exception as e:
+			print(message.content)
+			print(e)
 
 	def run(self):
 		yield from self.start(self.email, self.password)

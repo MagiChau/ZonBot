@@ -75,6 +75,13 @@ class TwitchStreamNotifier():
 		"""
 		if not isinstance(stream, str) or not isinstance(cid, str):
 			return None
+
+		stream_exists = await self.does_stream_exist(stream)
+		if stream_exists is None:
+			return "Error: Failed to check if stream exists. Try again."
+		elif not stream_exists:
+			return "Error: stream does not exist."
+			
 		if cid not in self.streams:
 			self.streams[cid] = {stream:False}
 		else:
@@ -116,8 +123,9 @@ class TwitchStreamNotifier():
 				return "Error removing {} from the streams database".format(stream)
 
 	async def does_stream_exist(self, stream):
-		"""Returns whether a channel exists. Any error will result in False."""
+		"""Returns whether a channel exists. Error returns None"""
 		url = self.TWITCH_API_BASE_URL + 'channels/' + stream
+		response = None
 		try:
 			response = await aiohttp.get(url, headers=self.headers)
 			raw = await response.json()
@@ -125,7 +133,7 @@ class TwitchStreamNotifier():
 			if 'error' not in raw:
 				return True
 		except aiohttp.errors.ClientOSError:
-			pass
+			return None
 
 		return False
 
@@ -148,15 +156,18 @@ class TwitchStreamNotifier():
 	async def get_stream(self, stream):
 		"""Returns a stream dictionary of a Twitch stream. Returns None if request fails."""
 		url = self.TWITCH_API_BASE_URL + 'streams/' + stream
+		response = None
 		try:
 			response = await aiohttp.get(url, headers=self.headers)
 			if response.status == 200:
 				raw = await response.json()
 				return raw
-				response.close()
-			response.close()
 		except aiohttp.errors.ClientOSError as e:
 			return None
+		finally:
+			if response is not None:
+				await response.release()
+
 
 	async def list_stream(self, channelID):
 		sep = ','
@@ -182,8 +193,11 @@ class TwitchStreamNotifier():
 					stream_dict['stream']['game'], stream_dict['stream']['channel']['status'],stream_dict['stream']['channel']['url'])
 				try:
 					await self.client.send_message(discord.Object(cid), output)
-				except discord.errors.Forbidden:
+				except (discord.errors.Forbidden, discord.errors.NotFound) as e:
 					print("Unable to send message in specified channel")
+					if isinstance(e, discord.errors.NotFound):
+						for stream in self.streams[cid]:
+							self.remove_stream(cid, stream)
 
 	async def run(self):
 		await self.client.wait_until_ready()
