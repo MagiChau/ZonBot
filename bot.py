@@ -237,7 +237,7 @@ class Bot(discord.Client):
 		cmd_msg = message.content
 		if cmd_msg.startswith("!prunebot "):
 			arg = cmd_msg[len("!prunebot "):]
-			log = await self.logs_from(message.channel)
+			log = await self.logs_from(message.channel, limit=500)
 			if arg == 'all':
 				for msg in log:
 					if msg.author.id == self.user.id:

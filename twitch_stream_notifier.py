@@ -76,7 +76,7 @@ class TwitchStreamNotifier():
 		if not isinstance(stream, str) or not isinstance(cid, str):
 			return None
 
-		stream_exists = await self.does_stream_exist(cid, stream)
+		stream_exists = await self.does_stream_exist(stream)
 		if stream_exists is None:
 			return "Error: Failed to check if stream exists. Try again."
 		elif not stream_exists:
