@@ -3,6 +3,7 @@ import asyncio
 import configparser
 import copy
 import discord
+import gc
 import json
 import memory_profiler
 from os import path
@@ -156,7 +157,7 @@ class TwitchStreamNotifier():
 	async def get_stream(self, stream):
 		"""Returns a stream dictionary of a Twitch stream. Returns None if request fails."""
 		url = self.TWITCH_API_BASE_URL + 'streams/' + stream
-		await with aiohttp.get(url, headers=self.headers) as response:
+		async with aiohttp.get(url, headers=self.headers) as response:
 			raw = await response.json()
 			if response.status == 200:
 				return raw
@@ -205,3 +206,4 @@ class TwitchStreamNotifier():
 			for cid in streams_copy:
 				for stream in streams_copy[cid]:
 					await self.notify_stream_online(cid, stream)
+			gc.collect()
