@@ -345,13 +345,13 @@ class Bot(discord.Client):
 							output = ""
 							for query in hearthstone_queries:
 								if output != "":
-									output += "\n\n"
+									output += "\n"
 								results = hs_card_lookup.find_matches(query, 0.5)
 								if len(results) > 0:
 									results.sort(key=lambda x: x[1], reverse = True)
 									output  = output + (await self.format_hearthstone_card(results[0][0]))
 							if output != "":
-								await self.send_message(message.channel, output[:-2])
+								await self.send_message(message.channel, output[:-1])
 		except Exception as e:
 			print(message.content)
 			print(e)
