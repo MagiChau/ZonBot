@@ -57,12 +57,9 @@ class Bot(discord.Client):
 	async def addstream_command(self, message):
 		if message.content.startswith("!addstream "):
 			stream = message.content[len("!addstream "):]
-			if (await self.twitch_notifier.does_stream_exist(stream)):
-				output = await self.twitch_notifier.add_stream(message.channel.id, stream)
-				if output is not None:
-					await self.send_message(message.channel, output)
-			else:
-				await self.send_message(message.channel, "Channel does not exist")
+			output = await self.twitch_notifier.add_stream(message.channel.id, stream)
+			if output is not None:
+				await self.send_message(message.channel, output)
 
 	async def removestream_command(self, message):
 		if self.ownerID == message.author.id or (message.server is not None and \
