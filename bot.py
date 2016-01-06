@@ -112,7 +112,7 @@ class Bot(discord.Client):
 	async def hearthstone_card_lookup_command(self, message):
 		if message.content.startswith("!card "):
 			query = message.content[6:]
-			results = hs_card_lookup.find_matches(query, 0.5)
+			results = hs_card_lookup.find_matches(query, 0.75)
 			if len(results) > 0:
 				results.sort(key=lambda x: x[1], reverse = True)
 				output = await self.format_hearthstone_card(results[0][0])
@@ -132,9 +132,12 @@ class Bot(discord.Client):
 			new_text = text
 
 			#Remove Spell Damage Character
-			while '$' in new_text:
-				pos = new_text.find('$')
-				new_text = new_text[pos + 1:]
+			# while '$' in new_text:
+			# 	pos = new_text.find('$')
+			# 	if pos == 0:
+			# 		new_text = new_text[pos + 1:]
+			# 	else:
+			# 		new_text = new_text[:pos] + new_text[pos + 1:]
 
 			def remove_html_tag(text, tag, replace):
 				new_text = text
