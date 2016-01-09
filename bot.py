@@ -11,6 +11,7 @@ import discord
 from twitch_stream_notifier import TwitchStreamNotifier
 import invite_manager
 import hs_card_lookup
+import logging
 
 class Bot(discord.Client):
 	def __init__(self):
@@ -22,6 +23,7 @@ class Bot(discord.Client):
 		self.start_time = None
 		self.hs_blacklist = ["81384788765712384"]
 		self.server_blacklist = ["81384788765712384"]
+		logging.basicConfig(level=logging.INFO)
 
 	def set_config_vars(self):
 		config = configparser.ConfigParser()
@@ -73,12 +75,18 @@ class Bot(discord.Client):
 	async def baka_command(self, message):
 		filepath = path.join((sys.path[0] + '/res/baka.jpg'))
 		with open(filepath, 'rb') as picture:
-			await self.send_file(message.channel, picture)
+			try:
+				await self.send_file(message.channel, picture)
+			except discord.Forbidden:
+				await self.send_message(message.channel, "Error: bot does not have permission to post pictures through send file.")
 
 	async def nobully_command(self, message):
 		filepath = path.join((sys.path[0] + '/res/nobully.jpg'))
 		with open(filepath, 'rb') as picture:
-			await self.send_file(message.channel, picture)
+			try:
+				await self.send_file(message.channel, picture)
+			except discord.Forbidden:
+				await self.send_message(message.channel, "Error: bot does not have permission to post pictures through send file.")
 
 	async def channelinfo_command(self, message):
 		if message.server is not None:
@@ -233,7 +241,7 @@ class Bot(discord.Client):
 		elif message.content == "!help uptime":
 			help_message = "Usage: !helptime\nDisplays the length of time the bot has been up."
 		elif message.content == "!help whois":
-			help_message = "Usage: !whois <User>\nDisplays information about a user. Can accept an exact username, a mention, or a user ID number."
+			help_message = "Usage: !whois <User>\nDisplays information about a user. Can accept a username, a mention, or a user ID number. In private channels you can only use the command on yourself."
 
 		if help_message is not None:
 			await self.send_message(message.channel, help_message)
@@ -297,18 +305,38 @@ class Bot(discord.Client):
 		if message.content.startswith('!whois '):
 			user = message.content[len('!whois '):]
 			match = re.fullmatch(r'<@[0-9]+>', user)
-			if match:
-				user = match.string[2:-1]
-				found_user = discord.utils.get(message.server.members, id = user)
-			else:
-				if re.fullmatch(r'[0-9]+', user):
+			found_user = None
+			output = None
+			if message.server is not None:
+				if match:
+					user = match.string[2:-1]
 					found_user = discord.utils.get(message.server.members, id = user)
 				else:
-					found_user = discord.utils.get(message.server.members, name = user)
+					if re.fullmatch(r'[0-9]+', user):
+						found_user = discord.utils.get(message.server.members, id = user)
+					else:
+						found_user = discord.utils.find(lambda m: user.lower() in m.name.lower(), message.server.members)
+			else:
+				if match:
+					user = match.string[2:-1]
+					found_user = message.author if user == message.author.id else None
+				else:
+					if re.fullmatch(r'[0-9]+', user):
+						found_user = message.author if user == message.author.id else None
+					else:
+						found_user = message.author if user.lower() in message.author.name.lower() else None
 
-			if found_user:
-				output = "```Name: {}\nID: {}\nJoined Server On: {}/{}/{}```".format(found_user.name, found_user.id, \
+			if found_user and hasattr(found_user, 'server'):
+				output = "```Name: {}\nID: {}\nAvatar: {}\nJoined Server On: {}/{}/{}```".format(found_user.name, found_user.id, found_user.avatar_url, \
 					found_user.joined_at.month, found_user.joined_at.day, found_user.joined_at.year)
+			elif found_user and not hasattr(found_user, 'server'):
+				output = "```Name: {}\nID: {}\nAvatar: {}```".format(found_user.name, found_user.id, found_user.avatar_url)
+			elif found_user is None and message.server is not None:
+				output = "User could not be found in this server."
+			elif found_user is None and message.server is None:
+				output = "In private channels you can only use this command on your self to preserve privacy."
+
+			if output is not None:
 				await self.send_message(message.channel, output)
 
 	async def list_delimited_text(self, message, delimiter1, delimiter2):
