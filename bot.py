@@ -13,8 +13,8 @@ class Bot(commands.Bot):
 		config.read(filepath)
 		self.email = config['LOGIN']['email']
 		self.password = config['LOGIN']['password']
-		self.owner_ID = config['OWNER']['id']
-		self.twitch_ID = config['TWITCH']['client_id']
+		self.owner_id = config['OWNER']['id']
+		self.twitch_id = config['TWITCH']['client_id']
 		self.carbon_key = config['CARBON']['key']
 
 	async def on_ready(self):
