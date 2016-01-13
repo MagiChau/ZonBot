@@ -30,5 +30,10 @@ class Info():
         except AttributeError:
             await self.bot.say("Command cannot be used in private channels.")
 
+    @info.command(name='user', pass_context=True)
+    async def _user(self, ctx, user : str):
+        pass
+
+
 def setup(bot):
     bot.add_cog(Info(bot))
