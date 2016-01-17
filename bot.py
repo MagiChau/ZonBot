@@ -28,6 +28,7 @@ class Bot(commands.Bot):
 		_load_extension('owner_tools')
 		_load_extension('info')
 		_load_extension('picture')
+		_load_extension('invite')
 		
 
 	async def _startup_message(self):
