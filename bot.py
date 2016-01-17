@@ -27,6 +27,7 @@ class Bot(commands.Bot):
 			self.load_extension('extensions.{}.{}'.format(name, name))
 		_load_extension('loader')
 		_load_extension('info')
+		_load_extension('picture')
 		
 
 	async def _startup_message(self):
