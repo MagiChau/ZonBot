@@ -1,29 +1,33 @@
 import asyncio
-import configparser
+import config
 import discord
 from discord.ext import commands
+import os
+import sys
 
 class Bot(commands.Bot):
-	def __init__(self, config_filepath, command_prefix):
+	def __init__(self, command_prefix):
 		super().__init__(command_prefix)
-		self._load_config_data(config_filepath)
+		self._load_config_data()
 		self._initialize_listeners()
 		self._initialize_extensions()
 
-	def _load_config_data(self, filepath):
-		config = configparser.ConfigParser()
-		config.read(filepath)
-		self.email = config['LOGIN']['email']
-		self.password = config['LOGIN']['password']
-		self.owner_id = config['OWNER']['id']
-		self.twitch_id = config['TWITCH']['client_id']
-		self.carbon_key = config['CARBON']['key']
+	def _load_config_data(self):
+		self.email = config.email
+		self.password = config.password
+		self.owner_id = config.owner_id
+		self.twitch_id = config.twitch_id
+		self.carbon_key = config.carbon_key
 
 	def _initialize_listeners(self):
 		self.add_listener(self._startup_message, 'on_ready')
 
 	def _initialize_extensions(self):
-		self.load_extension('extensions.info.info')
+		def _load_extension(name):
+			self.load_extension('extensions.{}.{}'.format(name, name))
+		_load_extension('loader')
+		_load_extension('info')
+		
 
 	async def _startup_message(self):
 		print("Logged in as {}".format(self.user.name))
