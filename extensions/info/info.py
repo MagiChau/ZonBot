@@ -1,17 +1,18 @@
 from discord.ext import commands
+import time
 
 class Info():
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.group(pass_context=True)
+    @commands.group(pass_context=True, help="Displays various information.")
     async def info(self, ctx):
         if ctx.invoked_subcommand is None:
             msg = "Bot created by ZonMachi.\nDeveloped using the discord.py library."
             msg += "\nCurrently connected to {} servers.".format(str(len(self.bot.servers)))
             await self.bot.say(msg)
 
-    @info.command(name='channel', pass_context=True)
+    @info.command(name='channel', pass_context=True, help="Lists information about a channel.")
     async def _channel(self, ctx):
         if ctx.message.channel.is_private:
             msg = "```Channel ID: {}```".format(ctx.message.channel.id)
@@ -20,7 +21,7 @@ class Info():
             msg += "\nServer: {}\nServer ID: {}```".format(ctx.message.server.name, ctx.message.server.id)
         await self.bot.say(msg)
 
-    @info.command(name='server', pass_context=True)
+    @info.command(name='server', pass_context=True, help = "Lists information about a server.")
     async def _server(self, ctx):
         try:
             s = ctx.message.server
@@ -30,7 +31,7 @@ class Info():
         except AttributeError:
             await self.bot.say("Command cannot be used in private channels.")
 
-    @info.command(name='user', pass_context=True)
+    @info.command(name='user', pass_context=True, help="Lists information about a user.")
     async def _user(self, ctx, user : str):
         msg = "No user found."
         found = None
@@ -68,6 +69,33 @@ class Info():
             msg += " You can only use the command on yourself in a private channel."
 
         await self.bot.say(msg)
+
+    @commands.command(help="States bot total running time.")
+    async def uptime(self):
+        seconds = int(time.time() - self.bot.start_time)
+        minutes = seconds // 60
+        seconds -= minutes * 60
+        hours = minutes // 60
+        minutes -= hours * 60
+        days = hours // 24
+        hours -= days * 24
+
+        #takes a numerical time and what it corresponds to e.g. hours and return a string
+        def parse_time(time, time_type):
+            if time > 1:
+                return ' ' + str(time) + ' ' + time_type
+            elif time == 1:
+                return ' ' + str(time) + ' ' + time_type[:-1]
+            else:
+                return ''
+
+        seconds = parse_time(seconds, 'seconds')
+        minutes = parse_time(minutes, 'minutes')
+        hours = parse_time(hours, 'hours')
+        days = parse_time(days, 'days')
+
+        output = "ZonBot has been up for{}{}{}{}".format(days, hours, minutes, seconds)
+        await self.bot.say(output)
 
 def setup(bot):
     bot.add_cog(Info(bot))

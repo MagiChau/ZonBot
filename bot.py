@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 import os
 import sys
+import time
 
 class Bot(commands.Bot):
 	def __init__(self, command_prefix):
@@ -11,6 +12,7 @@ class Bot(commands.Bot):
 		self._load_config_data()
 		self._initialize_listeners()
 		self._initialize_extensions()
+		self.start_time = 0
 
 	def _load_config_data(self):
 		self.email = config.email
@@ -35,6 +37,7 @@ class Bot(commands.Bot):
 		print("Logged in as {}".format(self.user.name))
 		print("User ID: {}".format(self.user.id))
 		print("Library: {} - {}".format(discord.__title__, discord.__version__))
+		self.start_time = time.time()
 
 	def run(self):
 		try:
