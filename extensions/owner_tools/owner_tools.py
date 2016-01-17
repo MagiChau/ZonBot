@@ -25,5 +25,16 @@ class Loader():
             await self.bot.say("Failed to unload extension {}".format(name))
         await self.bot.say("Successfully unloaded extension {}".format(name))
 
+    @commands.command(name='debug')
+    @checks.is_owner()
+    async def eval(self, code : str):
+        try:
+            f = eval(code)
+            if asyncio.iscoroutine(f):
+                f = await f
+        except Exception as e:
+            f = e
+        await self.bot.say("```py\n{}```".format(f))
+
 def setup(bot):
     bot.add_cog(Loader(bot))
