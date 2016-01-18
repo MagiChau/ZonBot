@@ -5,7 +5,7 @@ class Info():
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.group(pass_context=True, help="Displays various information.")
+    @commands.group(pass_context=True, help="Info about the bot. You can also use the following subcommands")
     async def info(self, ctx):
         if ctx.invoked_subcommand is None:
             msg = "Bot created by ZonMachi.\nDeveloped using the discord.py library."

@@ -12,9 +12,10 @@ class Loader():
         name = name.strip(' ')
         try:
             self.bot.load_extension("extensions.{}.{}".format(name, name))
-        except:
+            await self.bot.say("Successfully loaded extension {}".format(name))
+        except Exception as e:
             await self.bot.say("Failed to load extension {}".format(name))
-        await self.bot.say("Successfully loaded extension {}".format(name))
+            print(e)
 
     @commands.command(name='unload', help='Unloads an extension.')
     @checks.is_owner()
@@ -22,9 +23,9 @@ class Loader():
         name = name.strip(' ')
         try:
             self.bot.unload_extension("extensions.{}.{}".format(name, name))
+            await self.bot.say("Successfully unloaded extension {}".format(name))
         except:
             await self.bot.say("Failed to unload extension {}".format(name))
-        await self.bot.say("Successfully unloaded extension {}".format(name))
 
     @commands.command(name='eval', help="Evaluates code.")
     @checks.is_owner()
