@@ -26,11 +26,12 @@ class Bot(commands.Bot):
 
 	def _initialize_extensions(self):
 		def _load_extension(name):
-			self.load_extension('extensions.{}.{}'.format(name, name))
+			self.load_extension('extensions.{0}.{0}'.format(name))
 		_load_extension('owner_tools')
 		_load_extension('info')
 		_load_extension('picture')
 		_load_extension('invite')
+		_load_extension('hearthstone')
 		
 
 	async def _startup_message(self):

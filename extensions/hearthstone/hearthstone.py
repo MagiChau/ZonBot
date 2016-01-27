@@ -1,6 +1,5 @@
 from discord.ext import commands
 import copy
-import json
 import requests
 import time
 
@@ -174,8 +173,6 @@ class Hearthstone():
         return "[{name}]:{stats}{cost}{pclass}{cset}\n{text}{flavor}".format(name=name, stats=stats, cost=cost,
             pclass=pclass, cset=cset, text=text, flavor=flavor)
 
-
-
     @commands.command()
     async def card(self, query : str):
         query = query.strip(' ')
@@ -184,6 +181,42 @@ class Hearthstone():
             await self.bot.say(self.discord_card_message(match))
         else:
             await self.bot.say("Card not found.")
+
+    async def scan_card_queries(self, message, delimiters=['[',']']):
+        if message.author.id == self.bot.user.id:
+            return
+        msg = message.content
+        if '`' in msg: return
+
+        #adds all text contained in the delimiters to the queries list
+        queries = []
+        index = 0
+        while index != -1:
+            index = msg[index:].find(delimiters[0])
+            close_index = msg[index:].find(delimiters[1])
+
+            if (index == -1 or close_index == -1):
+                break
+
+            queries.append(msg[index+1:close_index])
+            index = close_index +1
+
+        output = ""
+        for query in queries:
+            card = await self._find_card(query, self.min_match)
+
+            if card:
+                data = self.discord_card_message(card)
+                output = "{0}{1}\n".format(output, data)
+
+        output = output[:-1] if output[-1] == "\n" else output
+
+        if len(output) > 0:
+            await self.bot.send_message(message.channel, output)
+
+
+
+
 
 class CardType():
     MINION = "MINION"
@@ -209,6 +242,8 @@ class CardSet():
 
 def setup(bot):
     start_time = time.time()
-    bot.add_cog(Hearthstone(bot))
-    print("Setup time: " + str(time.time() - start_time))
+    hs = Hearthstone(bot)
+    bot.add_cog(hs)
+    bot.add_listener(hs.scan_card_queries, "on_message")
+    print("Hearthstone Setup time: " + str(time.time() - start_time))
 
