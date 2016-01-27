@@ -209,7 +209,7 @@ class Hearthstone():
                 data = self.discord_card_message(card)
                 output = "{0}{1}\n".format(output, data)
 
-        output = output[:-1] if output[-1] == "\n" else output
+        output = output[:-1] if output[-1:] == "\n" else output
 
         if len(output) > 0:
             await self.bot.send_message(message.channel, output)
