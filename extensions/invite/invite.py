@@ -1,4 +1,5 @@
 from discord.ext import commands
+import discord
 import re
 
 class Invite():
@@ -25,13 +26,13 @@ class Invite():
             match = re.fullmatch(regex_pattern, invite)
             if match:
                 try:
-                    invite = await self.box.get_invite(invite)
+                    invite = await self.bot.get_invite(invite)
                     if invite.server not in self.bot.servers:
                         await self.bot.accept_invite(invite)
                     else:
-                        await self.bot.say("Already in that server.")
+                        await self.bot.send_message(message.channel,"Already in that server.")
                 except (discord.HTTPException, discord.NotFound):
-                    await self.bot.say("Error joining server.")
+                    await self.bot.send_message(message.channel, "Error joining server.")
 
 def setup(bot):
     invite = Invite(bot)
