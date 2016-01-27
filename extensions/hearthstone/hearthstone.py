@@ -1,17 +1,64 @@
+import asyncio
+import checks
 from discord.ext import commands
 import copy
+import json
+import os
 import requests
+import sys
 import time
 
 class Hearthstone():
-
     def __init__(self, bot, lang="enUS", min_match=0.5):
+        self.whitelist_path = os.path.join(sys.path[0] + "/extensions/hearthstone/whitelist.json")
         self.bot = bot
         self.lang = lang
         self.min_match = min_match
         self.cards = None
         self.cards = self._get_card_json()
         self._clean_cards_dict(self.cards)
+        self.whitelist = self._get_whitelist_json()
+
+        self.lock_whitelist = asyncio.Lock()
+
+    def _get_whitelist_json(self):
+        whitelist = []
+        try:
+            file = open(self.whitelist_path, 'r', encoding='utf8')
+            try:
+                whitelist = json.loads(file.read())
+            except ValueError:
+                pass
+        except FileNotFoundError:
+            file = open(self.whitelist_path, 'w+', encoding='utf8')
+        finally:
+            file.close()
+        return whitelist
+
+    def _save_whitelist_json(self):
+        file = open(self.whitelist_path, 'w', encoding='utf8')
+        json.dump(self.whitelist, file)
+        file.close()
+
+    @commands.command(name="hs_enable", pass_context = True, help="Enables card lookup through [query]")
+    @checks.is_not_pvt_chan()
+    async def add_whitelist(self, ctx):
+        with (await self.lock_whitelist):
+            id = ctx.message.channel.id
+            if id not in self.whitelist:
+                self.whitelist.append(id)
+                self._save_whitelist_json()
+                await self.bot.say("Hearthstone Card Lookup Detection Enabled")
+
+    @commands.command(name="hs_disable", pass_context = True, help="Disables card lookup through [query]")
+    @checks.is_not_pvt_chan()
+    async def del_whitelist(self, ctx):
+        with (await self.lock_whitelist):
+            id = ctx.message.channel.id
+            if id in self.whitelist:
+                self.whitelist.remove(id)
+                self._save_whitelist_json()
+                await self.bot.say("Hearthstone Card Lookup Detection Disabled")
 
     def _get_card_json(self, max_attempts=10):
         request_url = "https://api.hearthstonejson.com/v1/latest/{}/cards.json".format(self.lang)
@@ -185,22 +232,26 @@ class Hearthstone():
     async def scan_card_queries(self, message, delimiters=['[',']']):
         if message.author.id == self.bot.user.id:
             return
+        with (await self.lock_whitelist):
+            if not message.channel.is_private:
+                if message.channel.id not in self.whitelist:
+                    return
         msg = message.content
         if '`' in msg: return
 
         #adds all text contained in the delimiters to the queries list
         queries = []
         index = 0
+        msg_len = len(msg)
         while index != -1:
-            index = msg[index:].find(delimiters[0])
-            close_index = msg[index:].find(delimiters[1])
+            index = msg.find(delimiters[0], index, msg_len)
+            close_index = msg.find(delimiters[1], index, msg_len)
 
             if (index == -1 or close_index == -1):
                 break
 
             queries.append(msg[index+1:close_index])
-            index = close_index +1
-
+            index = close_index + 1
         output = ""
         for query in queries:
             card = await self._find_card(query, self.min_match)
@@ -213,10 +264,6 @@ class Hearthstone():
 
         if len(output) > 0:
             await self.bot.send_message(message.channel, output)
-
-
-
-
 
 class CardType():
     MINION = "MINION"
