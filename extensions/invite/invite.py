@@ -1,3 +1,4 @@
+import checks
 from discord.ext import commands
 import discord
 import re
@@ -7,13 +8,16 @@ class Invite():
     def __init__(self, bot):
         self.bot = bot
 
+
     @commands.command(name="join", help="Accepts an invite to a Discord server.")
+    @checks.is_owner()
     async def accept_invite(self, invite : str):
         invite = invite.strip(' ')
         try:
             invite = await self.box.get_invite(invite)
             if invite.server not in self.bot.servers:
                 await self.bot.accept_invite(invite)
+                await self.bot.say("Successfully joined server.")
             else:
                 await self.bot.say("Already in that server.")
         except (discord.HTTPException, discord.NotFound):
@@ -29,8 +33,9 @@ class Invite():
                     invite = await self.bot.get_invite(invite)
                     if invite.server not in self.bot.servers:
                         await self.bot.accept_invite(invite)
+                        await self.bot.send_message(message.channel, "Successfully joined server.")
                     else:
-                        await self.bot.send_message(message.channel,"Already in that server.")
+                        await self.bot.send_message(message.channel, "Already in that server.")
                 except (discord.HTTPException, discord.NotFound):
                     await self.bot.send_message(message.channel, "Error joining server.")
 
