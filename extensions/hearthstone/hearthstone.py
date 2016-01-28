@@ -24,7 +24,7 @@ class Hearthstone():
         self._clean_cards_dict(self.cards)
         self.whitelist = self._set_whitelist()
 
-        self.lock_whitelist = asyncio.Lock()
+        self.whitelist_lock = asyncio.Lock()
 
     def _set_whitelist(self):
         """Retrieves whitelist from a JSON file and return it. Empty list if file is not found."""
@@ -52,7 +52,7 @@ class Hearthstone():
     @checks.is_not_pvt_chan()
     async def add_to_whitelist(self, ctx):
         """Command Adds a non-private channel ID to the whitelist and saves to whitelist.json"""
-        with (await self.lock_whitelist):
+        with (await self.whitelist_lock):
             id = ctx.message.channel.id
             if id not in self.whitelist:
                 self.whitelist.append(id)
@@ -63,7 +63,7 @@ class Hearthstone():
     @checks.is_not_pvt_chan()
     async def del_from_whitelist(self, ctx):
         """Command Deletes a non-private channel ID from the whitelist and saves to whitelist.json"""
-        with (await self.lock_whitelist):
+        with (await self.whitelist_lock):
             id = ctx.message.channel.id
             if id in self.whitelist:
                 self.whitelist.remove(id)
@@ -289,7 +289,7 @@ class Hearthstone():
         """on_message event that parses for queries within delimiters and display cards"""
         if message.author.id == self.bot.user.id:
             return
-        with (await self.lock_whitelist):
+        with (await self.whitelist_lock):
             if not message.channel.is_private:
                 if message.channel.id not in self.whitelist:
                     return
