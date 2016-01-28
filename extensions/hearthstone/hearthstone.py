@@ -11,7 +11,7 @@ import sys
 import time
 
 class Hearthstone():
-    def __init__(self, bot, lang="enUS", min_match=0.5):
+    def __init__(self, bot, lang="enUS", min_match=0.75):
         self.whitelist_path = os.path.join(sys.path[0] + "/extensions/hearthstone/whitelist.json")
         self.cards_path = os.path.join(sys.path[0] + "/extensions/hearthstone/cards.json")
 
@@ -56,7 +56,7 @@ class Hearthstone():
             id = ctx.message.channel.id
             if id not in self.whitelist:
                 self.whitelist.append(id)
-                self._save_whitelist()
+                self._save_whitelist(self.whitelist)
                 await self.bot.say("Hearthstone Card Lookup Detection Enabled")
 
     @commands.command(name="hs_disable", pass_context = True, help="Disables card lookup through [query]")
@@ -67,12 +67,12 @@ class Hearthstone():
             id = ctx.message.channel.id
             if id in self.whitelist:
                 self.whitelist.remove(id)
-                self._save_whitelist()
+                self._save_whitelist(self.whitelist)
                 await self.bot.say("Hearthstone Card Lookup Detection Disabled")
 
-    def _get_hsjson_last_mod(self):
-        """Retrieves last modified time from hsjson's server in seconds since Epoch"""
-        time = None
+    def _get_server_mod_time(self):
+        """Retrieves last modified time from hsjson's server in seconds since the Epoch"""
+        time = 0
         try:
             response = requests.head(self.cards_url)
             response.raise_for_status()
@@ -109,16 +109,15 @@ class Hearthstone():
     def _set_cards(self):
         """Retrieves the most up to date cards.json file and returns the dictionary.
         cards.json will be downloaded if there is no local file or it is out of date."""
-        cards = None
-        local_last_modified = 0
+        local_time = 0
         try:
-            local_last_modified = os.stat(self.cards_path).st_mtime
+            local_time = os.stat(self.cards_path).st_mtime
         except Exception as e:
             print(e)
 
-        st = self._get_hsjson_last_mod()
+        server_time = self._get_server_mod_time()
 
-        if st > local_last_modified:
+        if server_time > local_time:
             cards = self._download_card_json()
             self._save_card_json(cards)
         else:
