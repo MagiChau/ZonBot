@@ -8,7 +8,6 @@ import json
 import os
 import requests
 import sys
-import time
 
 class Hearthstone():
     def __init__(self, bot, lang="enUS", min_match=0.75):
@@ -52,7 +51,7 @@ class Hearthstone():
     @checks.is_not_pvt_chan()
     async def add_to_whitelist(self, ctx):
         """Command Adds a non-private channel ID to the whitelist and saves to whitelist.json"""
-        with (await self.whitelist_lock):
+        async with self.whitelist_lock:
             id = ctx.message.channel.id
             if id not in self.whitelist:
                 self.whitelist.append(id)
@@ -63,7 +62,7 @@ class Hearthstone():
     @checks.is_not_pvt_chan()
     async def del_from_whitelist(self, ctx):
         """Command Deletes a non-private channel ID from the whitelist and saves to whitelist.json"""
-        with (await self.whitelist_lock):
+        async with self.whitelist_lock:
             id = ctx.message.channel.id
             if id in self.whitelist:
                 self.whitelist.remove(id)
@@ -345,9 +344,7 @@ class CardSet():
     TGT = "TGT"
 
 def setup(bot):
-    start_time = time.time()
     hs = Hearthstone(bot)
     bot.add_cog(hs)
     bot.add_listener(hs.scan_card_queries, "on_message")
-    print("Hearthstone Setup time: " + str(time.time() - start_time))
 
