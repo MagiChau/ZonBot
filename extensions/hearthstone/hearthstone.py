@@ -10,6 +10,8 @@ import requests
 import sys
 
 class Hearthstone():
+    """Card searches through square brackets disabled by default"""
+
     def __init__(self, bot, lang="enUS", min_match=0.75):
         self.whitelist_path = os.path.join(sys.path[0] + "/extensions/hearthstone/whitelist.json")
         self.cards_path = os.path.join(sys.path[0] + "/extensions/hearthstone/cards.json")
@@ -27,6 +29,7 @@ class Hearthstone():
 
     def _set_whitelist(self):
         """Retrieves whitelist from a JSON file and return it. Empty list if file is not found."""
+
         whitelist = []
         try:
             file = open(self.whitelist_path, 'r', encoding='utf8')
@@ -43,34 +46,47 @@ class Hearthstone():
 
     def _save_whitelist(self, whitelist):
         """Saves a whitelist to whitelist.json"""
+
         file = open(self.whitelist_path, 'w', encoding='utf8')
         json.dump(whitelist, file)
         file.close()
 
-    @commands.command(name="hs_enable", pass_context = True, help="Enables card lookup through [query]")
+    @commands.command(name="hs_enable", pass_context = True)
     @checks.is_not_pvt_chan()
     async def add_to_whitelist(self, ctx):
-        """Command Adds a non-private channel ID to the whitelist and saves to whitelist.json"""
+        """Enables card lookup through "[query]\"
+        Only enabled for the channel command is used in
+        """
+
         async with self.whitelist_lock:
             id = ctx.message.channel.id
             if id not in self.whitelist:
                 self.whitelist.append(id)
                 self._save_whitelist(self.whitelist)
                 await self.bot.say("Hearthstone Card Lookup Detection Enabled")
+            else:
+                await self.bot.say("Already Enabled")
 
-    @commands.command(name="hs_disable", pass_context = True, help="Disables card lookup through [query]")
+    @commands.command(name="hs_disable", pass_context = True)
     @checks.is_not_pvt_chan()
     async def del_from_whitelist(self, ctx):
-        """Command Deletes a non-private channel ID from the whitelist and saves to whitelist.json"""
+        """Disables card lookup "[query]\"
+        Only disabled for the channel command is used in
+        By default this mode is on
+        """
+
         async with self.whitelist_lock:
             id = ctx.message.channel.id
             if id in self.whitelist:
                 self.whitelist.remove(id)
                 self._save_whitelist(self.whitelist)
                 await self.bot.say("Hearthstone Card Lookup Detection Disabled")
+            else:
+                await self.bot.say("Already Disabled")
 
     def _get_server_mod_time(self):
         """Retrieves last modified time from hsjson's server in seconds since the Epoch"""
+
         time = 0
         try:
             response = requests.head(self.cards_url)
@@ -83,6 +99,7 @@ class Hearthstone():
 
     def _download_card_json(self):
         """Retrieves cards.json from hsjson and returns the dictionary"""
+
         cards = None
         try:
             response = requests.get(self.cards_url)
@@ -94,6 +111,7 @@ class Hearthstone():
 
     def _load_card_json(self):
         """Loads cards.json from file and returns the dictionary"""
+
         file = open(self.cards_path, 'r', encoding='utf8')
         cards = json.loads(file.read())
         file.close()
@@ -101,6 +119,7 @@ class Hearthstone():
 
     def _save_card_json(self, cards):
         """Saves a cards dictionary to cards.json file"""
+
         file = open(self.cards_path, 'w', encoding='utf8')
         json.dump(cards, file)
         file.close()
@@ -108,6 +127,7 @@ class Hearthstone():
     def _set_cards(self):
         """Retrieves the most up to date cards.json file and returns the dictionary.
         cards.json will be downloaded if there is no local file or it is out of date."""
+
         local_time = 0
         try:
             local_time = os.stat(self.cards_path).st_mtime
@@ -126,6 +146,7 @@ class Hearthstone():
 
     def _clean_cards_dict(self, cards, unwanted_sets=None):
         """Formats cards dict to remove unwanted cards and reformat text"""
+
         cards_copy = copy.deepcopy(cards)
         if unwanted_sets is None:
             unwanted_sets = [CardSet.CHEAT, CardSet.CREDITS, CardSet.HERO_SKINS, 
@@ -141,6 +162,8 @@ class Hearthstone():
             self._format_card(card)
 
     def _format_card(self, card):
+        """Takes a card dict and format its fields"""
+
         def replace_html_tag(text, tag, replace):
             start_tag = "<{}>".format(tag)
             end_tag = "</{}>".format(tag)
@@ -186,6 +209,7 @@ class Hearthstone():
 
     async def _find_card(self, query, min_match):
         """Retrieves the best matching card. Returns None if no card found"""
+
         def calc_levenshtein_distance(s1, s2):
             if len(s1) < len(s2):
                 return calc_levenshtein_distance(s2, s1)
@@ -256,6 +280,7 @@ class Hearthstone():
 
     def discord_card_message(self, card):
         """Formats a card into a string for a discord message"""
+
         name = card['name']
         type = card['type']
         cost = " Cost: {}".format(card['cost'])
@@ -264,19 +289,27 @@ class Hearthstone():
         elif type == CardType.SPELL: stats = ""
         elif type == CardType.WEAPON: stats = " {}/{}".format(card['attack'], card['durability'])
 
+        rarity= "{} ".format(card['rarity']) if 'rarity' in card else ""
         pclass = " - {}".format(card['playerClass']) if 'playerClass' in card else ""
+        race = " {}".format(card['race']) if 'race' in card else ""
         cset = " - {}".format(card['set'])
         text = card['text'] if 'text' in card else ""
         if 'flavor' in card:
             flavor = " - {}".format(card['flavor']) if len(text) > 0 else card['flavor']
         else:
             flavor = ""
-        return "[{name}]:{stats}{cost}{pclass}{cset}\n{text}{flavor}".format(name=name, stats=stats, cost=cost,
-            pclass=pclass, cset=cset, text=text, flavor=flavor)
+        output = """[{name}]: {rarity}{type} {stats}{cost}{pclass}{race}{cset}\n{text}{flavor}"""
+        return output.format(name=name, rarity=rarity.title(), type=type.title(),
+                             stats=stats, cost=cost, pclass=pclass, race=race, cset=cset,
+                             text=text, flavor=flavor)
 
     @commands.command()
     async def card(self, query : str):
-        """Command searches for a card and give info about it"""
+        """Searches for a card
+
+        Usage: !card <query>
+        """
+
         query = query.strip(' ')
         match = await self._find_card(query, self.min_match)
         if match:
@@ -286,6 +319,7 @@ class Hearthstone():
 
     async def scan_card_queries(self, message, delimiters=['[',']']):
         """on_message event that parses for queries within delimiters and display cards"""
+
         if message.author.id == self.bot.user.id:
             return
         with (await self.whitelist_lock):
