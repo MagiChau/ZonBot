@@ -32,6 +32,7 @@ class Bot(commands.Bot):
 		_load_extension('picture')
 		_load_extension('invite')
 		_load_extension('hearthstone')
+		_load_extension('twitch')
 		
 
 	async def _startup_message(self):
