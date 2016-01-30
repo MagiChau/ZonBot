@@ -20,12 +20,16 @@ class Moderate():
 
         while count <= num:
             del_flag = False
-            async for msg in self.logs_from(ctx.message.channel):
+            async for msg in self.bot.logs_from(ctx.message.channel, limit=100):
                 if count == num:
                     break
-                elif ctx.message.author.id == self.bot.user.id:
+                elif msg.author.id == self.bot.user.id:
                     count += 1
                     del_flag = True
                     await self.bot.delete_message(msg)
+                    print("msg del")
 
             if not del_flag: break
+
+def setup(bot):
+    bot.add_cog(Moderate(bot))
