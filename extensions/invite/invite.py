@@ -31,7 +31,7 @@ class Invite():
     async def accept_carbon_invites(self, message):
         """On Message Event: Accepts PM invites from Carbon"""
 
-        if message.channel.is_private and message.author.id == "90897174145044480":
+        if message.channel.is_private and message.author.id == "109338686889476096":
             invite = message.content.strip(' ')
             regex_pattern = r'https?://discord((.gg/)|(app.com/invite/))[a-zA-Z0-9]+'
             match = re.fullmatch(regex_pattern, invite)
