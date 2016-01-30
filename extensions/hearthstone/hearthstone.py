@@ -300,7 +300,7 @@ class Hearthstone():
             flavor = ""
         output = """[{name}]: {rarity}{type} {stats}{cost}{pclass}{race}{cset}\n{text}{flavor}"""
         return output.format(name=name, rarity=rarity.title(), type=type.title(),
-                             stats=stats, cost=cost, pclass=pclass, race=race, cset=cset,
+                             stats=stats, cost=cost, pclass=pclass, race=race.title(), cset=cset,
                              text=text, flavor=flavor)
 
     @commands.command()
