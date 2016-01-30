@@ -33,6 +33,7 @@ class Bot(commands.Bot):
 		_load_extension('invite')
 		_load_extension('hearthstone')
 		_load_extension('twitch')
+		_load_extension('moderate')
 		
 
 	async def _startup_message(self):
