@@ -150,15 +150,17 @@ class Twitch():
                                                              channel_data['url'])
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    async def twitch(self, ctx, stream: str):
-        """Set of commands related to Twitch.tv
+    async def twitch(self, ctx, *, stream: str):
+        """Do !help twitch for info
+        Twitch.tv related commands
 
-        Checking Stream Status:
+        Check A Twitch Stream Status:
         Usage: !twitch <stream>
 
         Using Twitch Commands
         Usage: !twitch <command> [parameter]
         """
+
         is_valid = await self.is_stream_valid(stream)
 
         if is_valid is None:
@@ -179,7 +181,7 @@ class Twitch():
 
     @twitch.command(name="add", pass_context=True)
     async def twitch_add(self, ctx, stream: str):
-        """Adds a Twitch stream to the notification list.
+        """Adds a Twitch stream to the notification list
 
         Usage: !twitch add <stream>
         stream: name of a non-banned Twitch stream e.g. summit1g
@@ -210,7 +212,7 @@ class Twitch():
 
     @twitch.command(name="del", pass_context=True)
     async def twitch_del(self, ctx, stream: str):
-        """Deletes a Twitch stream from the notification list.
+        """Deletes a Twitch stream from the notification list
 
         Usage: !twitch del <stream>
         stream: name of a non-banned Twitch stream e.g. summit1g
@@ -250,7 +252,7 @@ class Twitch():
     @commands.group(name="notifier")
     @checks.is_owner()
     async def _notifier(self):
-        """Used to enable or disable the Twitch Notifier.
+        """Used to enable or disable the Twitch Notifier
 
         Usage: !notifier <command>
         """
@@ -288,18 +290,18 @@ class Twitch():
             await self.bot.wait_until_ready()
             while not self.bot.is_closed:
                 async with self.notifier_lock:
-                    if self.notifier_enabled:
-                        for stream in self.streams:
-                            data = await self.get_stream(stream)
-                            if data is None:
-                                pass
-                            elif data == False and self.streams[stream]['status']:
-                                self.streams[stream]['status'] = False
-                                self._update_stream_status_database(stream, False)
-                            elif data and not self.streams[stream]['status']:
-                                self.streams[stream]['status'] = True
-                                self._update_stream_status_database(stream, True)
-                                for cid in self.streams[stream]['channels']:
+                    for stream in self.streams:
+                        data = await self.get_stream(stream)
+                        if data is None:
+                            pass
+                        elif data == False and self.streams[stream]['status']:
+                            self.streams[stream]['status'] = False
+                            self._update_stream_status_database(stream, False)
+                        elif data and not self.streams[stream]['status']:
+                            self.streams[stream]['status'] = True
+                            self._update_stream_status_database(stream, True)
+                            for cid in self.streams[stream]['channels']:
+                                if self.notifier_enabled:
                                     await self.bot.send_message(discord.Object(cid),
                                                                 (self.format_stream_notification(data)))
                 await asyncio.sleep(30)
