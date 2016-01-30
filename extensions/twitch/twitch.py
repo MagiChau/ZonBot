@@ -61,7 +61,7 @@ class Twitch():
             if stream in streams:
                 streams[stream]['channels'].append(cid)
             else:
-                streams[stream] = {'channels':[cid], 'status':status}
+                streams[stream] = {'channels': [cid], 'status': status}
         return streams
 
     def _add_stream_database(self, channel_id, stream, status=False):
@@ -146,7 +146,8 @@ class Twitch():
         stream_data = stream['stream']
         channel_data = stream['stream']['channel']
         return "{0} is now playing {1}: {2} at <{3}>".format(channel_data['display_name'],
-                                                       stream_data['game'], channel_data['status'], channel_data['url'])
+                                                             stream_data['game'], channel_data['status'],
+                                                             channel_data['url'])
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def twitch(self, ctx, stream: str):
@@ -203,7 +204,7 @@ class Twitch():
                 else:
                     self.streams[stream]['channels'].append(cid)
             else:
-                self.streams[stream] = {'channels':[cid], 'status': False}
+                self.streams[stream] = {'channels': [cid], 'status': False}
         self._add_stream_database(ctx.message.channel.id, stream)
         await self.bot.say(stream + " added to the notification list.")
 
@@ -235,14 +236,14 @@ class Twitch():
     async def twitch_list(self, ctx):
         """Lists all streams for this channel and their status"""
 
-        convert_boot = lambda b: "Online" if b==True else "Offline"
+        convert_boot = lambda b: "Online" if b == True else "Offline"
 
         cid = ctx.message.channel.id
         msg = "```"
         for stream in self.streams:
             if cid in self.streams[stream]['channels']:
-                msg+="\n{0}: {1}".format(stream, convert_boot(self.streams[stream]['status']))
-        msg+="```"
+                msg += "\n{0}: {1}".format(stream, convert_boot(self.streams[stream]['status']))
+        msg += "```"
 
         await self.bot.say(msg)
 
@@ -280,7 +281,6 @@ class Twitch():
                 await self.bot.say("Twitch Notifier Already Disabled")
             self.notifier_enabled = False
 
-
     async def notifier_task(self):
         """Runs a Twitch Notifier background task."""
 
@@ -300,8 +300,9 @@ class Twitch():
                                 self.streams[stream]['status'] = True
                                 self._update_stream_status_database(stream, True)
                                 for cid in self.streams[stream]['channels']:
-                                    await self.bot.send_message(discord.Object(cid), (self.format_stream_notification(data)))
-                await asyncio.sleep(10)
+                                    await self.bot.send_message(discord.Object(cid),
+                                                                (self.format_stream_notification(data)))
+                await asyncio.sleep(30)
         except asyncio.CancelledError:
             pass
 
