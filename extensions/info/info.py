@@ -1,4 +1,6 @@
 from discord.ext import commands
+import discord
+import re
 import time
 
 class Info():
@@ -41,7 +43,7 @@ class Info():
 
         try:
             s = ctx.message.server
-            msg = "Server: {}\nID: {}\nOwner: {}\nRegion: {}\nMembers: {}\nIcon: {}".format(s.name, s.id,
+            msg = "```Server: {}\nID: {}\nOwner: {}\nRegion: {}\nMembers: {}\nIcon: {}```".format(s.name, s.id,
                 s.owner.name, s.region, str(len(s.members)), s.icon_url)
             await self.bot.say(msg)
         except AttributeError:

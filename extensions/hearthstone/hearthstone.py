@@ -1,5 +1,4 @@
 import asyncio
-import calendar
 import checks
 from discord.ext import commands
 import copy

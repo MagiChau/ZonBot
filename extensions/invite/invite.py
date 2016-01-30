@@ -9,9 +9,14 @@ class Invite():
         self.bot = bot
 
 
-    @commands.command(name="join", help="Accepts an invite to a Discord server.")
+    @commands.command(name="join")
     @checks.is_owner()
     async def accept_invite(self, invite : str):
+        """Accepts an invite to a server
+
+        Usage: !join <invite>
+        """
+
         invite = invite.strip(' ')
         try:
             invite = await self.box.get_invite(invite)
@@ -24,6 +29,8 @@ class Invite():
             await self.bot.say("Error joining server.")
 
     async def accept_carbon_invites(self, message):
+        """On Message Event: Accepts PM invites from Carbon"""
+
         if message.channel.is_private and message.author.id == "90897174145044480":
             invite = message.content.strip(' ')
             regex_pattern = r'https?://discord((.gg/)|(app.com/invite/))[a-zA-Z0-9]+'

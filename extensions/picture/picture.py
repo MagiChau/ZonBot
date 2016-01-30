@@ -7,8 +7,10 @@ class Picture():
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(help="Awoo!")
+    @commands.command()
     async def awoo(self):
+        """awoo"""
+
         fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/awoo.jpg')
         with open(fp, 'rb') as f:
             try:
@@ -16,8 +18,10 @@ class Picture():
             except discord.Forbidden:
                 await self.bot.say("Error: bot does not have permission to upload pictures.")
 
-    @commands.command(help="Shows a baka.")
+    @commands.command()
     async def baka(self):
+        """Baka baka"""
+
         fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/baka.jpg')
         with open(fp, 'rb') as f:
             try:
@@ -25,8 +29,10 @@ class Picture():
             except discord.Forbidden:
                 await self.bot.say("Error: bot does not have permission to upload pictures.")
 
-    @commands.command(help="Summons the anti-bully ranger.")
+    @commands.command()
     async def nobully(self):
+        """No bullying allowed"""
+
         fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/nobully.jpg')
         with open(fp, 'rb') as f:
             try:
@@ -34,8 +40,9 @@ class Picture():
             except discord.Forbidden:
                 await self.bot.say("Error: bot does not have permission to upload pictures.")
 
-    @commands.command(help="Sad things are sad.")
+    @commands.command()
     async def sad(self):
+        """Sad things are sad"""
         fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/sad.jpg')
         with open(fp, 'rb') as f:
             try:
