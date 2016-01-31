@@ -50,38 +50,34 @@ class Hearthstone():
         json.dump(whitelist, file)
         file.close()
 
-    @commands.command(name="hs_enable", pass_context = True)
+    @commands.command(name="hs", pass_context = True)
     @checks.is_not_pvt_chan()
-    async def add_to_whitelist(self, ctx):
-        """Enables card lookup through "[query]\"
+    async def whitelist_toggle(self, ctx, enabled : bool):
+        """!help hs for info
+        Enables/Disables card lookup through "[query]\"
         Only enabled for the channel command is used in
+
+        Usage:
+        !hs enable
+        !hs disable
         """
 
         async with self.whitelist_lock:
             id = ctx.message.channel.id
-            if id not in self.whitelist:
-                self.whitelist.append(id)
-                self._save_whitelist(self.whitelist)
-                await self.bot.say("Hearthstone Card Lookup Detection Enabled")
+            if enabled:
+                if id not in self.whitelist:
+                    self.whitelist.append(id)
+                    self._save_whitelist(self.whitelist)
+                    await self.bot.say("Hearthstone Card Lookup Detection Enabled")
+                else:
+                    await self.bot.say("Already Enabled")
             else:
-                await self.bot.say("Already Enabled")
-
-    @commands.command(name="hs_disable", pass_context = True)
-    @checks.is_not_pvt_chan()
-    async def del_from_whitelist(self, ctx):
-        """Disables card lookup "[query]\"
-        Only disabled for the channel command is used in
-        By default this mode is on
-        """
-
-        async with self.whitelist_lock:
-            id = ctx.message.channel.id
-            if id in self.whitelist:
-                self.whitelist.remove(id)
-                self._save_whitelist(self.whitelist)
-                await self.bot.say("Hearthstone Card Lookup Detection Disabled")
-            else:
-                await self.bot.say("Already Disabled")
+                if id in self.whitelist:
+                    self.whitelist.remove(id)
+                    self._save_whitelist(self.whitelist)
+                    await self.bot.say("Hearthstone Card Lookup Detection Disabled")
+                else:
+                    await self.bot.say("Already Disabled")
 
     def _get_server_mod_time(self):
         """Retrieves last modified time from hsjson's server in seconds since the Epoch"""
@@ -206,7 +202,7 @@ class Hearthstone():
                 card['set'] = 'Classic'
 
 
-    async def _find_card(self, query, min_match):
+    async def _find_card(self, query, min_match, break_threshold=0.85):
         """Retrieves the best matching card. Returns None if no card found"""
 
         def calc_levenshtein_distance(s1, s2):
@@ -270,6 +266,8 @@ class Hearthstone():
 
             if percent_match >= min_match:
                 results.append([card, percent_match])
+                if percent_match > break_threshold:
+                    break
 
         if len(results) < 1:
             return
