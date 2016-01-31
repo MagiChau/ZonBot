@@ -10,23 +10,26 @@ class Invite():
 
 
     @commands.command(name="join")
-    @checks.is_owner()
     async def accept_invite(self, invite : str):
-        """Accepts an invite to a server
+        """Zonbot accepts an invite to a server
 
         Usage: !join <invite>
         """
 
         invite = invite.strip(' ')
-        try:
-            invite = await self.box.get_invite(invite)
-            if invite.server not in self.bot.servers:
-                await self.bot.accept_invite(invite)
-                await self.bot.say("Successfully joined server.")
-            else:
-                await self.bot.say("Already in that server.")
-        except (discord.HTTPException, discord.NotFound):
-            await self.bot.say("Error joining server.")
+        regex_pattern = r'https?://discord((.gg/)|(app.com/invite/))[a-zA-Z0-9]+'
+        match = re.fullmatch(regex_pattern, invite)
+        if match:
+            try:
+                invite = await self.bot.get_invite(invite)
+                if invite.server not in self.bot.servers:
+                    await self.bot.accept_invite(invite)
+                    await self.bot.say("Successfully joined server.")
+                else:
+                    await self.bot.say( "Already in that server.")
+            except (discord.HTTPException, discord.NotFound):
+                await self.bot.say("Error joining server.")
+
 
     async def accept_carbon_invites(self, message):
         """On Message Event: Accepts PM invites from Carbon"""
