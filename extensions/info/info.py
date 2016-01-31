@@ -9,7 +9,8 @@ class Info():
 
     @commands.group(pass_context=True)
     async def info(self, ctx):
-        """Displays various information
+        """Do !help info for info
+        Can be used to display bot info or invoke subcommands
 
         Bot Info
         Usage: !info
