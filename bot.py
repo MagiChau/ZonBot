@@ -44,8 +44,17 @@ class Bot(commands.Bot):
 
 	def run(self):
 		try:
+			self.loop.set_debug(True)
 			self.loop.run_until_complete(self.start(self.email, self.password))
 		except KeyboardInterrupt:
 			self.loop.run_until_complete(self.logout())
+			pending = asyncio.Task.all_tasks()
+			gathered = asyncio.gather(*pending)
+			try:
+				gathered.cancel()
+				self.loop.run_forever()
+				gathered.exception()
+			except:
+				pass
 		finally:
 			self.loop.close()
