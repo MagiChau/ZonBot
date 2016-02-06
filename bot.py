@@ -42,9 +42,16 @@ class Bot(commands.Bot):
 		print("Library: {} - {}".format(discord.__title__, discord.__version__))
 		self.start_time = time.time()
 
+	async def on_message(self, message):
+		try:
+			await self.process_commands(message)
+		except Exception as e:
+			print("Command Error Caught At Top Level")
+			print(e)
+
 	def run(self):
 		try:
-			self.loop.set_debug(True)
+			#self.loop.set_debug(True)
 			self.loop.run_until_complete(self.start(self.email, self.password))
 		except KeyboardInterrupt:
 			self.loop.run_until_complete(self.logout())
