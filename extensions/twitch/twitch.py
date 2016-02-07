@@ -3,10 +3,12 @@ import asyncio
 from discord.ext import commands
 import checks
 import config
+import copy
 import discord
 import os
 import sqlite3
 import sys
+import time
 
 
 class Twitch():
@@ -80,10 +82,13 @@ class Twitch():
 
     def _update_stream_status_database(self, stream, status):
         """Updates all rows in the streams database of one stream new values."""
-
-        row = (int(status), stream)
-        self.database_connection.execute("UPDATE streams SET status=? WHERE stream=?;", row)
-        self.database_connection.commit()
+        try:
+            row = (int(status), stream)
+            self.database_connection.execute("UPDATE streams SET status=? WHERE stream=?;", row)
+            self.database_connection.commit()
+        except Exception as e:
+            print(e)
+            print(stream)
 
     async def is_stream_valid(self, stream):
         """Returns if a twitch stream is valid. Returns None if there was an error connecting."""
@@ -95,7 +100,7 @@ class Twitch():
             response.release()
             if 'error' not in data:
                 return True
-        except aiohttp.errors.ClientOSError:
+        except:
             return None
 
         return False
@@ -123,9 +128,6 @@ class Twitch():
     async def get_stream(self, stream):
         """Returns a stream's response dict. Returns None if any errors occurred. Returns false if offline."""
 
-        if not (await self.is_stream_valid(stream)):
-            return
-
         url = Twitch.TWITCH_API_BASE_URL + 'streams/' + stream
 
         try:
@@ -136,8 +138,8 @@ class Twitch():
                         return False
                     else:
                         return data
-        except aiohttp.errors.ClientOSError:
-            pass
+        except Exception as e:
+            print("Error Occurred for {}: {}.".format(stream, str(e)))
         return None
 
     def format_stream_notification(self, stream):
@@ -150,7 +152,7 @@ class Twitch():
                                                              channel_data['url'])
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    async def twitch(self, ctx, *, stream: str):
+    async def twitch(self, ctx, stream: str):
         """Do !help twitch for info
         Twitch.tv related commands
 
@@ -177,7 +179,7 @@ class Twitch():
         elif stream_status is False:
             await self.bot.say("{0} is currently offline.".format(stream))
         else:
-            await self.bot.say((await self.format_stream_notification(stream_status)))
+            await self.bot.say(self.format_stream_notification(stream_status))
 
     @twitch.command(name="add", pass_context=True)
     async def twitch_add(self, ctx, stream: str):
@@ -207,8 +209,12 @@ class Twitch():
                     self.streams[stream]['channels'].append(cid)
             else:
                 self.streams[stream] = {'channels': [cid], 'status': False}
-        self._add_stream_database(ctx.message.channel.id, stream)
-        await self.bot.say(stream + " added to the notification list.")
+        try:
+            self._add_stream_database(ctx.message.channel.id, stream)
+            await self.bot.say(stream + " added to the notification list.")
+        except sqlite3.IntegrityError:
+            print("Integrity Error: {} {}".format(stream, ctx.message.channel.id))
+            await self.bot.say("Error adding stream to the database")
 
     @twitch.command(name="del", pass_context=True)
     async def twitch_del(self, ctx, stream: str):
@@ -242,10 +248,16 @@ class Twitch():
 
         cid = ctx.message.channel.id
         msg = "```"
+        count = 0
         for stream in self.streams:
             if cid in self.streams[stream]['channels']:
+                count += 1
                 msg += "\n{0}: {1}".format(stream, convert_boot(self.streams[stream]['status']))
         msg += "```"
+
+        if count == 0:
+            await self.bot.say("No streams on the notification list for this channel")
+            return
 
         await self.bot.say(msg)
 
@@ -285,13 +297,14 @@ class Twitch():
 
     async def notifier_task(self):
         """Runs a Twitch Notifier background task."""
-
-        try:
-            await self.bot.wait_until_ready()
-            while not self.bot.is_closed:
-                async with self.notifier_lock:
-                    for stream in self.streams:
-                        data = await self.get_stream(stream)
+        await self.bot.wait_until_ready()
+        start_time = time.time()
+        while not self.bot.is_closed:
+            async with self.notifier_lock:
+                streams_copy = copy.deepcopy(self.streams)
+                for stream in streams_copy:
+                    data = await self.get_stream(stream)
+                    try:
                         if data is None:
                             pass
                         elif data == False and self.streams[stream]['status']:
@@ -300,14 +313,21 @@ class Twitch():
                         elif data and not self.streams[stream]['status']:
                             self.streams[stream]['status'] = True
                             self._update_stream_status_database(stream, True)
-                            for cid in self.streams[stream]['channels']:
-                                if self.notifier_enabled:
-                                    await self.bot.send_message(discord.Object(cid),
-                                                                (self.format_stream_notification(data)))
-                await asyncio.sleep(30)
-        except asyncio.CancelledError:
-            pass
-
+                            msg = self.format_stream_notification(data)
+                            async with self.streams_lock:
+                                for cid in self.streams[stream]['channels']:
+                                    if self.notifier_enabled:
+                                        try:
+                                            await self.bot.send_message(discord.Object(cid), msg)
+                                        except Exception as e:
+                                            print(e)
+                    except Exception as e:
+                        print("Error Occurred In Notifier Task")
+                        print(e)
+                    #await asyncio.sleep(1)
+                #total_time = time.time() - start_time
+                #print("Notifier Loop Time: {}".format(total_time))
+                #start_time = time.time()
 
 def setup(bot):
     twitch = Twitch(bot)
