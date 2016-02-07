@@ -1,3 +1,4 @@
+import asyncio
 from discord.ext import commands
 import checks
 import discord
@@ -48,13 +49,24 @@ class Loader():
                 f = await f
         except Exception as e:
             f = e
-        await self.bot.say("```py\n{}```".format(f))
+        try:
+            await self.bot.say("```py\n{}```".format(f))
+        except discord.errors.HTTPException:
+            splits = int(len(f) / 2000)
+            f = str(f)
+            for i in range(0, splits):
+                await self.bot.say(f[i*2000:(i*2000)+1999])
 
     @commands.command(name='setstatus', help ="Changes bot game status.")
     @checks.is_owner()
-    async def set_status(self, game : str):
+    async def set_status(self, *, game : str):
         game = game.strip()
         await self.bot.change_status(discord.Game(name=game))
+
+    @commands.command()
+    @checks.is_owner()
+    async def logout(self):
+        await self.bot.logout()
 
 def setup(bot):
     bot.add_cog(Loader(bot))
