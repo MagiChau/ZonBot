@@ -11,7 +11,7 @@ class Picture():
     async def awoo(self):
         """awoo"""
 
-        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/awoo.jpg')
+        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/picture/awoo.jpg')
         with open(fp, 'rb') as f:
             try:
                 await self.bot.upload(f)
@@ -22,7 +22,7 @@ class Picture():
     async def baka(self):
         """Baka baka"""
 
-        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/baka.jpg')
+        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/picture/baka.jpg')
         with open(fp, 'rb') as f:
             try:
                 await self.bot.upload(f)
@@ -33,7 +33,7 @@ class Picture():
     async def nobully(self):
         """No bullying allowed"""
 
-        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/nobully.jpg')
+        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/picture/nobully.jpg')
         with open(fp, 'rb') as f:
             try:
                 await self.bot.upload(f)
@@ -43,7 +43,7 @@ class Picture():
     @commands.command()
     async def sad(self):
         """Sad things are sad"""
-        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/sad.jpg')
+        fp = os.path.join(os.path.dirname(os.path.realpath(__file__)) + '/picture/sad.jpg')
         with open(fp, 'rb') as f:
             try:
                 await self.bot.upload(f)

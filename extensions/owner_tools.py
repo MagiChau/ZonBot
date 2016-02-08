@@ -16,7 +16,7 @@ class Loader():
 
         ext = ext.strip(' ')
         try:
-            self.bot.load_extension("extensions.{}.{}".format(ext, ext))
+            self.bot.load_extension("extensions.{}".format(ext))
             await self.bot.say("Successfully loaded extension {}".format(ext))
         except Exception as e:
             await self.bot.say("Failed to load extension {}".format(ext))
@@ -31,7 +31,7 @@ class Loader():
 
         ext = ext.strip(' ')
         try:
-            self.bot.unload_extension("extensions.{}.{}".format(ext, ext))
+            self.bot.unload_extension("extensions.{}".format(ext))
             await self.bot.say("Successfully unloaded extension {}".format(ext))
         except:
             await self.bot.say("Failed to unload extension {}".format(ext))

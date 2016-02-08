@@ -26,7 +26,7 @@ class Bot(commands.Bot):
 
 	def _initialize_extensions(self):
 		def _load_extension(name):
-			self.load_extension('extensions.{0}.{0}'.format(name))
+			self.load_extension('extensions.{0}'.format(name))
 		_load_extension('owner_tools')
 		_load_extension('info')
 		_load_extension('picture')
