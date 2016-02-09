@@ -10,3 +10,11 @@ def is_not_pvt_chan():
     def predicate(ctx):
         return not ctx.message.channel.is_private
     return commands.check(predicate)
+
+def can_manage_message():
+    def predicate(ctx):
+        try:
+            return ctx.message.channel.permissions_for(ctx.message.author).manage_messages
+        except:
+            return False
+    return commands.check(predicate)
