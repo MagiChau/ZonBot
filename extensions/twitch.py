@@ -3,7 +3,6 @@ import asyncio
 from discord.ext import commands
 import checks
 import config
-import copy
 import discord
 import os
 import sqlite3
@@ -301,7 +300,7 @@ class Twitch():
         start_time = time.time()
         while not self.bot.is_closed:
             async with self.notifier_lock:
-                streams_copy = copy.deepcopy(self.streams)
+                streams_copy = self.streams.copy()
                 for stream in streams_copy:
                     data = await self.get_stream(stream)
                     try:
