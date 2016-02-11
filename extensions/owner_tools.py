@@ -38,7 +38,7 @@ class Loader():
 
     @commands.command(name='eval')
     @checks.is_owner()
-    async def eval(self, code : str):
+    async def eval(self, *, code : str):
         """Evaluates code
         Usage: !eval <code>
         """
