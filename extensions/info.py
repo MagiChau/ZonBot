@@ -51,7 +51,7 @@ class Info():
             await self.bot.say("Command cannot be used in private channels.")
 
     @info.command(name='user', pass_context=True)
-    async def _user(self, ctx, name : str):
+    async def _user(self, ctx, *, name : str):
         """Displays information about a user in the server command is invoked in
 
         Usage: !info user <name>

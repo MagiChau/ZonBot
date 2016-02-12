@@ -137,8 +137,8 @@ class Twitch():
                         return False
                     else:
                         return data
-        except Exception as e:
-            print("Error Occurred for {}: {}.".format(stream, str(e)))
+        except:
+            pass
         return None
 
     def format_stream_notification(self, stream):
