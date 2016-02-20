@@ -11,7 +11,7 @@ import sys
 class Hearthstone():
     """Card searches through square brackets disabled by default"""
 
-    def __init__(self, bot, lang="enUS", min_match=0.75):
+    def __init__(self, bot, lang="enUS", min_match=0.55):
         self.whitelist_path = os.path.join(sys.path[0] + "/extensions/hearthstone/whitelist.json")
         self.cards_path = os.path.join(sys.path[0] + "/extensions/hearthstone/cards.json")
 
