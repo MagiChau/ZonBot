@@ -36,9 +36,9 @@ class Loader():
         except:
             await self.bot.say("Failed to unload extension {}".format(ext))
 
-    @commands.command(name='eval')
+    @commands.command(name='eval', pass_context=True)
     @checks.is_owner()
-    async def eval(self, *, code : str):
+    async def eval(self, ctx, *, code : str):
         """Evaluates code
         Usage: !eval <code>
         """
