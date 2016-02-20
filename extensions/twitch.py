@@ -141,14 +141,27 @@ class Twitch():
             pass
         return None
 
+    async def get_streams(self, streams):
+        """Returns a list of online streams. Returns none if an error occurred."""
+
+        url = Twitch.TWITCH_API_BASE_URL + 'streams'
+        params = {"channel" : ",".join(map(str, streams)), "limit":100, "stream_type":"live"}
+
+        try:
+            async with aiohttp.get(url, headers=self.headers, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data
+        except:
+            pass
+        return None
+
     def format_stream_notification(self, stream):
         """Takes a stream dict and returns a formatted message for Discord"""
 
-        stream_data = stream['stream']
-        channel_data = stream['stream']['channel']
-        return "{0} is now playing {1}: {2} at <{3}>".format(channel_data['display_name'],
-                                                             stream_data['game'], channel_data['status'],
-                                                             channel_data['url'])
+        return "{0} is now playing {1}: {2} at <{3}>".format(stream['channel']['display_name'],
+                                                             stream['game'], stream['channel']['status'],
+                                                             stream['channel']['url'])
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def twitch(self, ctx, stream: str):
@@ -178,7 +191,7 @@ class Twitch():
         elif stream_status is False:
             await self.bot.say("{0} is currently offline.".format(stream))
         else:
-            await self.bot.say(self.format_stream_notification(stream_status))
+            await self.bot.say(self.format_stream_notification(stream_status["stream"]))
 
     @twitch.command(name="add", pass_context=True)
     async def twitch_add(self, ctx, stream: str):
@@ -296,37 +309,48 @@ class Twitch():
 
     async def notifier_task(self):
         """Runs a Twitch Notifier background task."""
+
+        def getrows_byslice(seq, rowlen):
+            for index in range(0, len(seq), rowlen):
+                yield seq[index:index+rowlen]
+
         await self.bot.wait_until_ready()
         start_time = time.time()
         while not self.bot.is_closed:
             async with self.notifier_lock:
-                streams_copy = self.streams.copy()
-                for stream in streams_copy:
-                    data = await self.get_stream(stream)
-                    try:
-                        if data is None:
-                            pass
-                        elif data == False and self.streams[stream]['status']:
-                            self.streams[stream]['status'] = False
-                            self._update_stream_status_database(stream, False)
-                        elif data and not self.streams[stream]['status']:
-                            self.streams[stream]['status'] = True
-                            self._update_stream_status_database(stream, True)
-                            msg = self.format_stream_notification(data)
-                            async with self.streams_lock:
-                                for cid in self.streams[stream]['channels']:
-                                    if self.notifier_enabled:
-                                        try:
-                                            await self.bot.send_message(discord.Object(cid), msg)
-                                        except Exception as e:
-                                            print(e)
-                    except Exception as e:
-                        print("Error Occurred In Notifier Task")
-                        print(e)
-                    #await asyncio.sleep(1)
-                #total_time = time.time() - start_time
-                #print("Notifier Loop Time: {}".format(total_time))
-                #start_time = time.time()
+                if self.notifier_enabled:
+                    async with self.streams_lock:
+                        for streams in getrows_byslice(list(self.streams.keys()), 100):
+                            online = await self.get_streams(streams)
+                            if online is None: continue
+                            online_list = list()
+                            for index, stream in enumerate(online["streams"]):
+                                online_list.append(online["streams"][index]["channel"]["name"])
+                            for stream in streams:
+                                try:
+                                    if stream in online_list:
+                                        if not self.streams[stream]["status"]:
+                                            self.streams[stream]["status"] = True
+                                            self._update_stream_status_database(stream, True)
+                                            index = online_list.index(stream)
+                                            msg = self.format_stream_notification(online["streams"][index])
+                                            for channel in self.streams[stream]["channels"]:
+                                                try:
+                                                    await self.bot.send_message(discord.Object(channel), msg)
+                                                except:
+                                                    pass
+                                    else:
+                                        if self.streams[stream]["status"]:
+                                            self.streams[stream]["status"] = False
+                                            self._update_stream_status_database(stream, False)
+                                except Exception as e:
+                                    print("Error occurred in notifier loop")
+                                    print(e)
+
+                    total_time = time.time() - start_time
+                    print("Notifier Loop Time: {}".format(total_time))
+                    await asyncio.sleep(60)
+                    start_time = time.time()
 
 def setup(bot):
     twitch = Twitch(bot)
