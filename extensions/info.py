@@ -9,7 +9,7 @@ class Info():
 
     @commands.group(pass_context=True)
     async def info(self, ctx):
-        """Do !help info for info
+        """Can display bot, user, and server info, do !help info
         Can be used to display bot info or invoke subcommands
 
         Bot Info
@@ -22,6 +22,7 @@ class Info():
         if ctx.invoked_subcommand is None:
             msg = "Bot created by ZonMachi.\nDeveloped using the discord.py library."
             msg += "\nCurrently connected to {} servers.".format(str(len(self.bot.servers)))
+            msg += "\nJoin my help server if you need assistance using the bot. https://discord.gg/0qItBrYGz5ohN5sq"
             await self.bot.say(msg)
 
     @info.command(name='channel', pass_context=True)
