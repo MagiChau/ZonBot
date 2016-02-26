@@ -159,7 +159,7 @@ class Twitch():
     def format_stream_notification(self, stream):
         """Takes a stream dict and returns a formatted message for Discord"""
 
-        return "{0} is now playing {1}: {2} at <{3}>".format(stream['channel']['display_name'],
+        return "`{0}` is now playing {1}: {2} at <{3}>".format(stream['channel']['display_name'],
                                                              stream['game'], stream['channel']['status'],
                                                              stream['channel']['url'])
 
@@ -315,7 +315,6 @@ class Twitch():
                 yield seq[index:index+rowlen]
 
         await self.bot.wait_until_ready()
-        start_time = time.time()
         while not self.bot.is_closed:
             async with self.notifier_lock:
                 if self.notifier_enabled:
@@ -347,10 +346,7 @@ class Twitch():
                                     print("Error occurred in notifier loop")
                                     print(e)
 
-                    total_time = time.time() - start_time
-                    print("Notifier Loop Time: {}".format(total_time))
                     await asyncio.sleep(60)
-                    start_time = time.time()
 
 def setup(bot):
     twitch = Twitch(bot)
