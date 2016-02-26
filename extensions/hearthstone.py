@@ -273,6 +273,16 @@ class Hearthstone():
             return
         else:
             results.sort(key=lambda r: r[1], reverse=True)
+
+            def detect_tokens(lst):
+                #detects if card has tokens with the same name and return main card
+                #e.g. Druid of the Claw
+                pass
+
+            #guarantees exact matches are always returned. Edge case: mortal coil and mortal strike
+            for index, result in enumerate(results):
+                if result[0]['name'].lower() == query: return results[index][0]
+
             return results[0][0]
 
     def discord_card_message(self, card):
