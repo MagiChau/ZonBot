@@ -11,7 +11,7 @@ import sys
 class Hearthstone():
     """Card searches through square brackets disabled by default"""
 
-    def __init__(self, bot, lang="enUS", min_match=0.55):
+    def __init__(self, bot, lang="enUS", min_match=0.65):
         self.whitelist_path = os.path.join(sys.path[0] + "/extensions/hearthstone/whitelist.json")
         self.cards_path = os.path.join(sys.path[0] + "/extensions/hearthstone/cards.json")
 
@@ -200,7 +200,6 @@ class Hearthstone():
                 card['set'] = 'Basic'
             elif cset == CardSet.CLASSIC:
                 card['set'] = 'Classic'
-
 
     async def _find_card(self, query, min_match, break_threshold=0.85):
         """Retrieves the best matching card. Returns None if no card found"""

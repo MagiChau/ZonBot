@@ -28,6 +28,21 @@ class Util():
             for i in range(0, splits):
                 await self.bot.say(f[i*2000:(i*2000)+1999])
 
+    @commands.command(pass_context=True)
+    @checks.is_owner()
+    async def exec(self, ctx, *, code : str):
+        """Executes code
+        Usage: !exec <code>
+        """
+
+        try:
+            exec(code)
+        except Exception as e:
+            try:
+                self.bot.say("```py\n{}```".format(e))
+            except Exception as ex:
+                self.bot.say("```py\n{}```".format(ex))
+
     @commands.command(name='setstatus', help ="Changes bot game status.")
     @checks.is_owner()
     async def set_status(self, *, game : str):

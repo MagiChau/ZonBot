@@ -317,7 +317,8 @@ class Twitch():
         await self.bot.wait_until_ready()
         while not self.bot.is_closed:
             async with self.notifier_lock:
-                if self.notifier_enabled:
+                if not self.notifier_enabled:
+                    continue
                     async with self.streams_lock:
                         for streams in getrows_byslice(list(self.streams.keys()), 100):
                             online = await self.get_streams(streams)
