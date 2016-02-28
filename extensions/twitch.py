@@ -62,7 +62,7 @@ class Twitch():
             if stream in streams:
                 streams[stream]['channels'].append(cid)
             else:
-                streams[stream] = {'channels': [cid], 'status': status}
+                streams[stream] = {'channels': [cid], 'status': status, 'offline_counter': 0}
         return streams
 
     def _add_stream_database(self, channel_id, stream, status=False):
@@ -219,6 +219,11 @@ class Twitch():
                     return
                 else:
                     self.streams[stream]['channels'].append(cid)
+                    #Does a notification if the channel is already online (notification would be skipped normally)
+                    if self.streams[stream]['status']:
+                        stream_status = await self.get_stream(stream)
+                        if stream_status:
+                            await self.bot.say(self.format_stream_notification(stream_status["stream"]))
             else:
                 self.streams[stream] = {'channels': [cid], 'status': False}
         try:
@@ -319,35 +324,40 @@ class Twitch():
             async with self.notifier_lock:
                 if not self.notifier_enabled:
                     continue
-                    async with self.streams_lock:
-                        for streams in getrows_byslice(list(self.streams.keys()), 100):
-                            online = await self.get_streams(streams)
-                            if online is None: continue
-                            online_list = list()
-                            for index, stream in enumerate(online["streams"]):
-                                online_list.append(online["streams"][index]["channel"]["name"])
-                            for stream in streams:
-                                try:
-                                    if stream in online_list:
-                                        if not self.streams[stream]["status"]:
-                                            self.streams[stream]["status"] = True
-                                            self._update_stream_status_database(stream, True)
-                                            index = online_list.index(stream)
-                                            msg = self.format_stream_notification(online["streams"][index])
-                                            for channel in self.streams[stream]["channels"]:
-                                                try:
-                                                    await self.bot.send_message(discord.Object(channel), msg)
-                                                except:
-                                                    pass
-                                    else:
-                                        if self.streams[stream]["status"]:
+                async with self.streams_lock:
+                    for streams in getrows_byslice(list(self.streams.keys()), 100):
+                        online = await self.get_streams(streams)
+                        if online is None: continue
+                        online_list = list()
+                        for index, stream in enumerate(online["streams"]):
+                            online_list.append(online["streams"][index]["channel"]["name"])
+                        for stream in streams:
+                            try:
+                                if stream in online_list:
+                                    self.streams[stream]['offline_counter'] = 0 #resets offline count if stream is online
+                                    if not self.streams[stream]["status"]:
+                                        self.streams[stream]["status"] = True
+                                        self._update_stream_status_database(stream, True)
+                                        index = online_list.index(stream)
+                                        msg = self.format_stream_notification(online["streams"][index])
+                                        for channel in self.streams[stream]["channels"]:
+                                            try:
+                                                await self.bot.send_message(discord.Object(channel), msg)
+                                            except:
+                                                pass
+                                else:
+                                    if self.streams[stream]["status"]:
+                                        #Stream has to be offline in multiple checks to change from online to offline
+                                        self.streams[stream]['offline_counter'] += 1
+                                        if self.streams[stream]['offline_counter'] >= 5:
+                                            self.streams[stream]['offline_counter'] = 0
                                             self.streams[stream]["status"] = False
                                             self._update_stream_status_database(stream, False)
-                                except Exception as e:
-                                    print("Error occurred in notifier loop")
-                                    print(e)
+                            except Exception as e:
+                                print("Error occurred in notifier loop")
+                                print(e)
 
-                    await asyncio.sleep(60)
+            await asyncio.sleep(60)
 
 def setup(bot):
     twitch = Twitch(bot)
