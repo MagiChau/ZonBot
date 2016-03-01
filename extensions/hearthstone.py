@@ -201,7 +201,7 @@ class Hearthstone():
             elif cset == CardSet.CLASSIC:
                 card['set'] = 'Classic'
 
-    async def _find_card(self, query, min_match, break_threshold=0.85):
+    async def _find_card(self, query, min_match):
         """Retrieves the best matching card. Returns None if no card found"""
 
         def calc_levenshtein_distance(s1, s2):
@@ -265,8 +265,6 @@ class Hearthstone():
 
             if percent_match >= min_match:
                 results.append([card, percent_match])
-                if percent_match > break_threshold:
-                    break
 
         if len(results) < 1:
             return
