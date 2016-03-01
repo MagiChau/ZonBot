@@ -7,8 +7,8 @@ import sys
 import time
 
 class Bot(commands.Bot):
-	def __init__(self, command_prefix):
-		super().__init__(command_prefix)
+	def __init__(self, command_prefix, formatter=None, description=None, pm_help=False, **options):
+		super().__init__(command_prefix, formatter, description, pm_help, **options)
 		self._load_config_data()
 		self._initialize_listeners()
 		self._initialize_extensions()
