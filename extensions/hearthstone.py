@@ -172,7 +172,7 @@ class Hearthstone():
             char = '$'
             pos = text.find(char)
             while pos != -1:
-                text = text[:pos] + "\*" + text[pos+1] + "\*" + text[pos+2:] #backslashes escapes markdown italics
+                text = text[:pos] + "\\*" + text[pos+1] + "\\*" + text[pos+2:] #backslashes escapes markdown italics
                 pos = text.find(char)
             return text
 

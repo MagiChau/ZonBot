@@ -5,7 +5,6 @@ from discord.ext import commands
 import os
 import sys
 import time
-import websockets
 
 class Bot(commands.Bot):
 	def __init__(self, command_prefix, formatter=None, description=None, pm_help=False, **options):
