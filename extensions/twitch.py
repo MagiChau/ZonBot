@@ -159,8 +159,20 @@ class Twitch():
     def format_stream_notification(self, stream):
         """Takes a stream dict and returns a formatted message for Discord"""
 
-        return "`{0}` is now playing {1}: {2} at <{3}>".format(stream['channel']['display_name'],
-                                                             stream['game'], stream['channel']['status'],
+        def escape_markdown(name):
+            """Detects markdown characters in a string and escapes them"""
+            chars = ['*', '_', '`']
+            for char in chars:
+                pos = name.find(char)
+                while (pos != -1):
+                    name = name[:pos] + "\\" + name[pos:]
+                    pos = name.find(char, pos + 2)
+            return name
+
+
+        name = stream['channel']['display_name']
+        return "{0} is now playing {1}: {2} at <{3}>".format(escape_markdown(name), escape_markdown(stream['game']),
+                                                             escape_markdown(stream['channel']['status'].rstrip(' ')),
                                                              stream['channel']['url'])
 
     @commands.group(pass_context=True, invoke_without_command=True)
