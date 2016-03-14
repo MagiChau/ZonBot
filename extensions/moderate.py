@@ -54,7 +54,7 @@ class Moderate():
             return
 
         if not ctx.message.server.me.permissions_in(ctx.message.channel).manage_messages:
-            await self.bot.say("Bot does not have permission to delete messages.")
+            #await self.bot.say("Bot does not have permission to delete messages.")
             return
 
         count = 0

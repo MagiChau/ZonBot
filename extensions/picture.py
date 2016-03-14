@@ -16,7 +16,8 @@ class Picture():
             try:
                 await self.bot.upload(f)
             except discord.Forbidden:
-                await self.bot.say("Error: bot does not have permission to upload pictures.")
+                pass
+                #await self.bot.say("Error: bot does not have permission to upload pictures.")
 
     @commands.command()
     async def baka(self):
@@ -27,7 +28,8 @@ class Picture():
             try:
                 await self.bot.upload(f)
             except discord.Forbidden:
-                await self.bot.say("Error: bot does not have permission to upload pictures.")
+                pass
+                #await self.bot.say("Error: bot does not have permission to upload pictures.")
 
     @commands.command()
     async def nobully(self):
@@ -38,7 +40,8 @@ class Picture():
             try:
                 await self.bot.upload(f)
             except discord.Forbidden:
-                await self.bot.say("Error: bot does not have permission to upload pictures.")
+                pass
+                #await self.bot.say("Error: bot does not have permission to upload pictures.")
 
     @commands.command()
     async def sad(self):
@@ -48,7 +51,8 @@ class Picture():
             try:
                 await self.bot.upload(f)
             except discord.Forbidden:
-                await self.bot.say("Error: bot does not have permission to upload pictures.")
+                pass
+                #await self.bot.say("Error: bot does not have permission to upload pictures.")
 
 def setup(bot):
     bot.add_cog(Picture(bot))
