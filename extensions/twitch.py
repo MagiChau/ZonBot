@@ -159,15 +159,16 @@ class Twitch():
     def format_stream_notification(self, stream):
         """Takes a stream dict and returns a formatted message for Discord"""
 
-        def escape_markdown(name):
+        def escape_markdown(str):
             """Detects markdown characters in a string and escapes them"""
+            if str is None: return str
             chars = ['*', '_', '`']
             for char in chars:
-                pos = name.find(char)
+                pos = str.find(char)
                 while (pos != -1):
-                    name = name[:pos] + "\\" + name[pos:]
-                    pos = name.find(char, pos + 2)
-            return name
+                    str = str[:pos] + "\\" + str[pos:]
+                    pos = str.find(char, pos + 2)
+            return str
 
 
         name = stream['channel']['display_name']
