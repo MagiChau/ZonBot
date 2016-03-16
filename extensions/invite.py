@@ -4,6 +4,7 @@ import discord
 import re
 
 class Invite():
+    invite_regex_pattern = r'https?://discord((.gg/)|(app.com/invite/))[a-zA-Z0-9-]+'
 
     def __init__(self, bot):
         self.bot = bot
@@ -17,14 +18,13 @@ class Invite():
         """
 
         invite = invite.strip(' ')
-        regex_pattern = r'https?://discord((.gg/)|(app.com/invite/))[a-zA-Z0-9]+'
-        match = re.fullmatch(regex_pattern, invite)
+        match = re.fullmatch(Invite.invite_regex_pattern, invite)
         if match:
             try:
                 invite = await self.bot.get_invite(invite)
                 if invite.server not in self.bot.servers:
                     await self.bot.accept_invite(invite)
-                    await self.bot.say("Successfully joined server.")
+                    await self.bot.say("Successfully joined server.\nZonBot's command prefix is !")
                 else:
                     await self.bot.say( "Already in that server.")
             except (discord.HTTPException, discord.NotFound):
@@ -36,14 +36,13 @@ class Invite():
 
         if message.channel.is_private:
             invite = message.content.strip(' ')
-            regex_pattern = r'https?://discord((.gg/)|(app.com/invite/))[a-zA-Z0-9]+'
-            match = re.fullmatch(regex_pattern, invite)
+            match = re.fullmatch(Invite.invite_regex_pattern, invite)
             if match:
                 try:
                     invite = await self.bot.get_invite(invite)
                     if invite.server not in self.bot.servers:
                         await self.bot.accept_invite(invite)
-                        await self.bot.send_message(message.channel, "Successfully joined server.")
+                        await self.bot.send_message(message.channel, "Successfully joined server.\nZonBot's command prefix is !")
                     else:
                         await self.bot.send_message(message.channel, "Already in that server.")
                 except (discord.HTTPException, discord.NotFound):
@@ -52,4 +51,4 @@ class Invite():
 def setup(bot):
     invite = Invite(bot)
     bot.add_cog(invite)
-    bot.add_listener(invite.accept_carbon_invites, 'on_message')
+    bot.add_listener(invite.accept_private_invites, 'on_message')
