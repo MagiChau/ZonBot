@@ -73,7 +73,7 @@ class Bot(commands.Bot):
 		while True:
 			try:
 				self.loop.run_until_complete(self.login(self.email, self.password))
-			except (HTTPException, ClientError):
+			except (discord.HTTPException, aiohttp.ClientError):
 				print("Failed to login to Discord")
 				self.loop.run_until_complete(asyncio.sleep(15))
 			else:
@@ -81,6 +81,6 @@ class Bot(commands.Bot):
 		while not self.is_closed:
 			try:
 				self.loop.run_until_complete(self.sane_connect())
-			except (HTTPException, ClientError):
+			except (discord.HTTPException, aiohttp.ClientError):
 				print("Lost Connection")
 				self.loop.run_until_complete(asyncio.sleep(15))
