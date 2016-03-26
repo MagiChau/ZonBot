@@ -45,9 +45,12 @@ class Moderate():
         """
 
         try:
-            found = discord.utils.find(lambda x: name.lower() in x.name.lower(), ctx.message.server.members)
+            found = discord.utils.find(lambda m: name.lower() in m.name.lower(), ctx.message.server.members)
         except:
             found = None
+
+        if found is None:
+            found = discord.utils.find(lambda m: name == m.mention, ctx.message.server.members)
 
         if found is None:
             await self.bot.say("{} not found".format(name))
