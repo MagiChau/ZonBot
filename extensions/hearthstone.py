@@ -272,15 +272,30 @@ class Hearthstone():
             results.sort(key=lambda r: r[1], reverse=True)
 
             def detect_tokens(lst):
-                #detects if card has tokens with the same name and return main card
-                #e.g. Druid of the Claw
-                pass
+                """
+                detects if card has tokens with the same name and return main card
+                current algorithm is to decide the card with the shortest card ID is the original
+                This exploits the naming scheme that typically has the main card follows the format EXP_123 and tokens look like EXP_123b
+                """
+                name = lst[0][0]['name']
+                shortest = lst[0]
+                for card in lst:
+                    if card[0]['name'].lower() != name.lower(): continue
+                    if len(card[0]['id']) < len(shortest[0]['id']):
+                        shortest = card
+
+                return shortest[0]
+
 
             #guarantees exact matches are always returned. Edge case: mortal coil and mortal strike
-            for index, result in enumerate(results):
-                if result[0]['name'].lower() == query: return results[index][0]
+            exact_list = []
+            for result in results:
+                if result[0]['name'].lower() == query: exact_list.append(result)
 
-            return results[0][0]
+            #replaces results with a trimmed list of exact matches if any are found
+            if exact_list: results = exact_list          
+
+            return detect_tokens(results)
 
     def discord_card_message(self, card):
         """Formats a card into a string for a discord message"""
@@ -302,7 +317,7 @@ class Hearthstone():
             flavor = " - {}".format(card['flavor']) if len(text) > 0 else card['flavor']
         else:
             flavor = ""
-        output = """[{name}]: {rarity}{type} {stats}{cost}{pclass}{race}{cset}\n{text}{flavor}"""
+        output = """[{name}]: {rarity}{type}{stats}{cost}{pclass}{race}{cset}\n{text}{flavor}"""
         return output.format(name=name, rarity=rarity.title(), type=type.title(),
                              stats=stats, cost=cost, pclass=pclass, race=race.title(), cset=cset,
                              text=text, flavor=flavor)
