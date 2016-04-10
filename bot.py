@@ -33,6 +33,7 @@ class Bot(commands.Bot):
 	def _load_config_data(self):
 		self.email = config.email
 		self.password = config.password
+		self.token = config.token
 		self.owner_id = config.owner_id
 		self.twitch_id = config.twitch_id
 		self.carbon_key = config.carbon_key
@@ -47,7 +48,7 @@ class Bot(commands.Bot):
 		_load_extension('util')
 		_load_extension('info')
 		_load_extension('picture')
-		_load_extension('invite')
+		#_load_extension('invite')
 		_load_extension('hearthstone')
 		_load_extension('twitch')
 		_load_extension('moderate')
@@ -72,7 +73,7 @@ class Bot(commands.Bot):
 		#self.loop.set_debug(True)
 		while True:
 			try:
-				self.loop.run_until_complete(self.login(self.email, self.password))
+				self.loop.run_until_complete(self.login(self.token))
 			except (discord.HTTPException, aiohttp.ClientError):
 				print("Failed to login to Discord")
 				self.loop.run_until_complete(asyncio.sleep(15))
