@@ -1,3 +1,9 @@
+#pictures
+*.jpeg
+*.jpg
+*.gif
+*.png
+
 #Pycharm
 .idea/
 
