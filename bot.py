@@ -52,6 +52,7 @@ class Bot(commands.Bot):
 		_load_extension('hearthstone')
 		_load_extension('twitch')
 		_load_extension('moderate')
+		_load_extension('carbon')
 		
 
 	async def _startup_message(self):
