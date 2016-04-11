@@ -172,9 +172,15 @@ class Twitch():
 
 
         name = stream['channel']['display_name']
-        return "{0} is now playing {1}: {2} at <{3}>".format(escape_markdown(name), escape_markdown(stream['game']),
-                                                             escape_markdown(stream['channel']['status'].rstrip(' ')),
-                                                             stream['channel']['url'])
+        if stream['game']:
+            game = " {0}".format(escape_markdown(stream['game']))
+        else:
+            game = ""
+        if stream['channel']['status']:
+            status = ": {0} ".format(escape_markdown(stream['channel']['status']).rstrip(' '))
+        else:
+            status = ""
+        return "{0} is now playing{1}{2}at <{3}>".format(escape_markdown(name), game, status, stream['channel']['url'])
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def twitch(self, ctx, stream: str):
