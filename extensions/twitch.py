@@ -9,12 +9,21 @@ import sqlite3
 import sys
 import time
 
+def twitch_permission():
+        def predicate(ctx):
+            if ctx.message.channel.is_private: return True
+            try:
+                return ctx.message.channel.permissions_for(ctx.message.author).manage_messages
+            except:
+                return False
+        return commands.check(predicate)
 
 class Twitch():
     TWITCH_API_BASE_URL = 'https://api.twitch.tv/kraken/'
 
     def __init__(self, bot):
         self.bot = bot
+        self.max_stream_count = 0
 
         self.database_path = os.path.join(sys.path[0] + "/extensions/twitch/streams.db")
         self.database_connection = self._init_database()
@@ -213,6 +222,7 @@ class Twitch():
             await self.bot.say(self.format_stream_notification(stream_status["stream"]))
 
     @twitch.command(name="add", pass_context=True)
+    @twitch_permission()
     async def twitch_add(self, ctx, stream: str):
         """Adds a Twitch stream to the notification list
 
@@ -253,6 +263,7 @@ class Twitch():
             await self.bot.say("Error adding stream to the database")
 
     @twitch.command(name="del", pass_context=True)
+    @twitch_permission()
     async def twitch_del(self, ctx, stream: str):
         """Deletes a Twitch stream from the notification list
 
@@ -344,9 +355,11 @@ class Twitch():
                 if not self.notifier_enabled:
                     continue
                 async with self.streams_lock:
-                    for streams in getrows_byslice(list(self.streams.keys()), 500):
+                    for streams in getrows_byslice(list(self.streams.keys()), 1000):
                         online = await self.get_streams(streams)
                         if online is None: continue
+                        if online["_total"] > self.max_stream_count: self.max_stream_count = online["_total"]
+
                         online_list = list()
                         for index, stream in enumerate(online["streams"]):
                             online_list.append(online["streams"][index]["channel"]["name"])
