@@ -36,7 +36,7 @@ class Carbon():
                 payload["servercount"] = str(len(self.bot.servers))
                 with aiohttp.ClientSession() as session:
                     async with session.post(Carbon.CARBON_BOT_DATA_URL, data=payload) as resp:
-                        print(await resp.text())
+                        pass
 
 
 

@@ -355,7 +355,7 @@ class Twitch():
                 if not self.notifier_enabled:
                     continue
                 async with self.streams_lock:
-                    for streams in getrows_byslice(list(self.streams.keys()), 1000):
+                    for streams in getrows_byslice(list(self.streams.keys()), 500):
                         online = await self.get_streams(streams)
                         if online is None: continue
                         if online["_total"] > self.max_stream_count: self.max_stream_count = online["_total"]
