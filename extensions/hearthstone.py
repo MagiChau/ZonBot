@@ -163,8 +163,22 @@ class Hearthstone():
             start_tag = "<{}>".format(tag)
             end_tag = "</{}>".format(tag)
 
-            text = text.replace(start_tag, replace)
-            text = text.replace(end_tag, replace)
+            #handle nested HTML tags
+            index = text.find(start_tag)
+            while index != -1:
+                count = 1
+
+                while True:
+                    sub_index = text.find(start_tag*(count+1))
+                    if sub_index == -1:
+                        break
+                    count += 1
+
+                text = text.replace(start_tag*count, replace, 1)
+                text = text.replace(end_tag, "", count-1)
+                text = text.replace(end_tag, replace, 1)
+
+                index = text.find(start_tag)
 
             return text
 
@@ -178,6 +192,12 @@ class Hearthstone():
 
         if 'text' in card:
             text = card['text']
+
+            text = " ".join(text.split())   #removes extra whitespace between words
+
+            x_box = "[x]"
+            if text[0:len(x_box)] == x_box: text = text[len(x_box):]
+
             text = replace_spell_power_char(text)
             text = replace_html_tag(text, 'b', '**')
             text = replace_html_tag(text, 'i', '*')
