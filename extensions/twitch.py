@@ -224,7 +224,7 @@ class Twitch():
     @twitch.command(name="add", pass_context=True)
     @twitch_permission()
     async def twitch_add(self, ctx, stream: str):
-        """Adds a Twitch stream to the notification list
+        """Adds a Twitch stream to the notification list. Requires Manage Messages permission.
 
         Usage: !twitch add <stream>
         stream: name of a non-banned Twitch stream e.g. summit1g
@@ -265,7 +265,7 @@ class Twitch():
     @twitch.command(name="del", pass_context=True)
     @twitch_permission()
     async def twitch_del(self, ctx, stream: str):
-        """Deletes a Twitch stream from the notification list
+        """Deletes a Twitch stream from the notification list. Requires Manage Messages permission.
 
         Usage: !twitch del <stream>
         stream: name of a non-banned Twitch stream e.g. summit1g
