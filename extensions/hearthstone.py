@@ -190,6 +190,8 @@ class Hearthstone():
                 pos = text.find(char)
             return text
 
+        if 'rarity' in card:
+            if card['rarity'] == "FREE": card['rarity'] = "BASIC"
         if 'text' in card:
             text = card['text']
 
