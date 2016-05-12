@@ -32,7 +32,6 @@ class Bot(commands.Bot):
 		_load_extension('util')
 		_load_extension('info')
 		_load_extension('picture')
-		#_load_extension('invite')
 		_load_extension('hearthstone')
 		_load_extension('twitch')
 		_load_extension('moderate')

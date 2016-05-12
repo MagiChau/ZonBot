@@ -36,5 +36,16 @@ class Loader():
         except:
             await self.bot.say("Failed to unload extension {}".format(ext))
 
+    @commands.command(name="reload")
+    @checks.is_owner()
+    async def reload_extension(self, ext : str):
+        """Reloads an extension
+        Usage: !reload <ext>
+        """
+
+        await self.unload_extension.callback(self, ext)
+        await self.load_extension.callback(self, ext)
+
+
 def setup(bot):
     bot.add_cog(Loader(bot))
