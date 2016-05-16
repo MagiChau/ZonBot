@@ -24,6 +24,7 @@ class Info():
             msg += "\nGithub Repo: <{}>".format("https://github.com/MagiChau/ZonBot")
             msg += "\n\nCurrently connected to {} servers.".format(str(len(self.bot.servers)))
             msg += "\nJoin my help server if you need assistance using the bot.\nhttps://discord.gg/0qItBrYGz5ohN5sq"
+            msg += "\n\nInvite URL: https://discordapp.com/oauth2/authorize?client_id=168740464143499264&scope=bot&permissions=101376"
             await self.bot.say(msg)
 
     @info.command(name='channel', pass_context=True)
