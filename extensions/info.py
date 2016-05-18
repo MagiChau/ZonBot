@@ -104,12 +104,9 @@ class Info():
         """Displays bot's total running time"""
 
         seconds = int(time.time() - self.bot.start_time)
-        minutes = seconds // 60
-        seconds -= minutes * 60
-        hours = minutes // 60
-        minutes -= hours * 60
-        days = hours // 24
-        hours -= days * 24
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
 
         #takes a numerical time and what it corresponds to e.g. hours and return a string
         def parse_time(time, time_type):
