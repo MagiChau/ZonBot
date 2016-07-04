@@ -115,5 +115,11 @@ class Picture():
 
         await self.upload_picture("sad", ctx)
 
+    @commands.command(pass_context=True)
+    async def smug(self, ctx):
+        """Bring me your best smug"""
+
+        await self.upload_picture("smug", ctx)
+
 def setup(bot):
     bot.add_cog(Picture(bot))
