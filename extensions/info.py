@@ -100,6 +100,11 @@ class Info():
         await self.bot.say(msg)
 
     @commands.command()
+    async def invite(self):
+        """Displays bot invite URL"""
+        await self.bot.say("https://discordapp.com/oauth2/authorize?client_id=168740464143499264&scope=bot&permissions=101376")
+
+    @commands.command()
     async def uptime(self):
         """Displays bot's total running time"""
 
