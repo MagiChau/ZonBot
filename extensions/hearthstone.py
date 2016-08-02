@@ -52,6 +52,7 @@ class Hearthstone():
 
     @commands.command(name="hs", pass_context = True)
     @checks.is_not_pvt_chan()
+    @checks.can_manage_message()
     async def whitelist_toggle(self, ctx, enabled : bool):
         """!help hs for info
         Enables/Disables card lookup through "[query]\"
