@@ -139,13 +139,14 @@ class Twitch():
         url = Twitch.TWITCH_API_BASE_URL + 'streams/' + stream
 
         try:
-            async with aiohttp.get(url, headers=self.headers) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    if data['stream'] is None:
-                        return False
-                    else:
-                        return data
+            with aiohttp.Timeout(15):
+                async with aiohttp.get(url, headers=self.headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data['stream'] is None:
+                            return False
+                        else:
+                            return data
         except:
             pass
         return None
@@ -157,10 +158,11 @@ class Twitch():
         params = {"channel" : ",".join(map(str, streams)), "limit":100, "stream_type":"live"}
 
         try:
-            async with aiohttp.get(url, headers=self.headers, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data
+            with aiohttp.Timeout(15):
+                async with aiohttp.get(url, headers=self.headers, params=params) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data
         except:
             pass
         return None
