@@ -85,12 +85,12 @@ class Hearthstone():
 
         time = 0
         try:
-            response = requests.head(self.cards_url)
+            response = requests.get(self.cards_url)
             response.raise_for_status()
             time = response.headers['Last-Modified']
             time = datetime.strptime(time, "%a, %d %b %Y %X %Z").timestamp()
         except Exception as e:
-            print(e)
+            print("Hearthstone: Error getting server cards.json last modified time")
         return time
 
     def _download_card_json(self):
@@ -148,7 +148,11 @@ class Hearthstone():
             unwanted_sets = [CardSet.CHEAT, CardSet.CREDITS, CardSet.HERO_SKINS, 
             CardSet.MISSIONS, CardSet.NONE, CardSet.TAVERNBRAWL]
         for card in cards_copy:
-            type = card['type']
+            if not 'type' in card: 
+                cards.remove(card)
+                continue
+
+            type = card['type'] 
             set = card['set']
             if set in unwanted_sets:
                 cards.remove(card)
@@ -410,6 +414,7 @@ class CardSet():
     CREDITS = "CREDITS"
     GVG = "GVG"
     HERO_SKINS = "HERO_SKINS"
+    KARA = "KARA"
     LOE = "LOE"
     MISSIONS = "MISSIONS"
     NAXX = "NAXX"
