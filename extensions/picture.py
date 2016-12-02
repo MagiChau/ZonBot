@@ -98,6 +98,12 @@ class Picture():
         await self.upload_picture("baka", ctx)
 
     @commands.command(pass_context=True)
+    async def lewd(self, ctx):
+        """Thats lewd"""
+
+        await self.upload_picture("lewd", ctx)
+
+    @commands.command(pass_context=True)
     async def nobully(self, ctx):
         """No bullying allowed"""
 
