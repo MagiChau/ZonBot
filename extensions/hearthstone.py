@@ -197,6 +197,9 @@ class Hearthstone():
 
         if 'rarity' in card:
             if card['rarity'] == "FREE": card['rarity'] = "BASIC"
+
+        if 'collectionText' in card:
+            card['text'] = card['collectionText']
         if 'text' in card:
             text = card['text']
 
@@ -210,6 +213,7 @@ class Hearthstone():
             text = replace_html_tag(text, 'i', '*')
             text = text.replace('\n', ' ')
             card['text'] = text
+
         if 'flavor' in card:
             text = card['flavor']
             text = replace_html_tag(text, 'b', '**')
@@ -219,6 +223,8 @@ class Hearthstone():
         if card['type'] == CardType.MINION:
             if 'playerClass' not in card and 'collectible' in card:
                 card['playerClass'] = 'Neutral'
+        if 'classes' in card:
+            card['playerClass'] = ", ".join(card['classes'])
         if 'playerClass' in card:
             card['playerClass'] = card['playerClass'].title()
         if 'set' in card:
